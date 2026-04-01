@@ -13,6 +13,7 @@ const crypto = require('crypto');
 const fetch = require('node-fetch');
 const { Blob } = require('buffer');
 const FormData = require('form-data');
+const { ReadableStream } = require('stream/web');
 
 // Compatibility for environments where global Fetch classes are missing (Node < 18).
 if (typeof globalThis.Headers === 'undefined') {
@@ -35,6 +36,9 @@ if (typeof globalThis.FormData === 'undefined') {
 }
 if (typeof globalThis.File === 'undefined' && fetch.File) {
     globalThis.File = fetch.File;
+}
+if (typeof globalThis.ReadableStream === 'undefined') {
+    globalThis.ReadableStream = ReadableStream;
 }
 
 const { google } = require('googleapis');
