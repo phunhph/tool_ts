@@ -1,0 +1,759 @@
+{
+  "5e57064f-cd9e-49fc-bcd6-68b156f87504": [
+    {
+      "id": "999f01c5-f5cb-4998-a62d-4e4fefa6d028",
+      "quizId": "5e57064f-cd9e-49fc-bcd6-68b156f87504",
+      "studentName": "Alice Test",
+      "score": 0,
+      "total": 2,
+      "submittedAt": "2026-01-15T09:08:39.308Z"
+    }
+  ],
+  "98db5326-ad11-4b86-ac0c-1bf11bcc987a": [
+    {
+      "id": "f4c2b0f7-78c9-46e1-815c-b0076e499064",
+      "quizId": "98db5326-ad11-4b86-ac0c-1bf11bcc987a",
+      "studentName": "An",
+      "score": 1,
+      "total": 5,
+      "submittedAt": "2026-01-15T09:09:53.725Z"
+    },
+    {
+      "id": "d463d7a1-d007-4fe0-b0a8-36d9381de751",
+      "quizId": "98db5326-ad11-4b86-ac0c-1bf11bcc987a",
+      "studentName": "Binh",
+      "score": 1,
+      "total": 5,
+      "submittedAt": "2026-01-15T09:10:10.102Z"
+    }
+  ],
+  "d8343169-90b6-4144-8ebd-26c168c13572": [
+    {
+      "id": "581705e7-5119-49b1-b71f-0f0f5dde323e",
+      "quizId": "d8343169-90b6-4144-8ebd-26c168c13572",
+      "studentName": "Final Check",
+      "score": 2,
+      "total": 5,
+      "submittedAt": "2026-01-15T09:31:53.489Z",
+      "answers": {
+        "0": "Hà Nội",
+        "1": "4"
+      }
+    }
+  ],
+  "38d72a1d-1509-4466-be51-2565d617cdb0": [
+    {
+      "id": "dec399d2-2f16-40db-afbb-d5e8bfe0bf84",
+      "quizId": "38d72a1d-1509-4466-be51-2565d617cdb0",
+      "studentName": "An",
+      "score": 1,
+      "total": 5,
+      "submittedAt": "2026-01-15T09:34:02.060Z",
+      "answers": {
+        "0": "Hà Nội",
+        "1": "3",
+        "2": "Python",
+        "3": "Hồ Xuân Hương",
+        "4": "Gấu trúc"
+      }
+    },
+    {
+      "id": "349cae04-6fbf-43c3-b32a-121759f216b8",
+      "quizId": "38d72a1d-1509-4466-be51-2565d617cdb0",
+      "studentName": "Chung@gmail.com",
+      "score": 1,
+      "total": 5,
+      "submittedAt": "2026-01-15T09:35:19.371Z",
+      "answers": {
+        "0": "Hà Nội",
+        "1": "3",
+        "2": "Python",
+        "3": "Hồ Xuân Hương",
+        "4": "Gấu trúc"
+      }
+    }
+  ],
+  "3cc8c8ba-656f-4747-b7e6-5dfceed9fca7": [
+    {
+      "id": "dfeaaacc-9cb4-439d-bf5d-20c6357b9ffc",
+      "quizId": "3cc8c8ba-656f-4747-b7e6-5dfceed9fca7",
+      "studentName": "Test Student",
+      "studentCode": "ST123",
+      "studentEmail": "student@test.com",
+      "score": 2,
+      "total": 2,
+      "submittedAt": "2026-01-15T09:48:10.316Z",
+      "answers": {
+        "0": "Hà Nội",
+        "1": "4"
+      }
+    }
+  ],
+  "46961609-fe9d-46b3-ba39-b2959cbb737a": [
+    {
+      "id": "a9287845-f6a7-45d0-ba1e-768f4bcc888e",
+      "quizId": "46961609-fe9d-46b3-ba39-b2959cbb737a",
+      "studentName": "Nguyen Van An",
+      "studentCode": "",
+      "studentEmail": "",
+      "score": 2,
+      "total": 83,
+      "submittedAt": "2026-01-15T09:52:32.870Z",
+      "answers": {
+        "0": "HSF300",
+        "1": "Java Persistence API",
+        "4": "EntityManager",
+        "5": "Java Program Quality Language"
+      }
+    },
+    {
+      "id": "da7a7034-eb20-4daa-bb09-8427aa956b82",
+      "quizId": "46961609-fe9d-46b3-ba39-b2959cbb737a",
+      "studentName": "Nguyen Van An",
+      "studentCode": "",
+      "studentEmail": "",
+      "score": 0,
+      "total": 83,
+      "submittedAt": "2026-01-15T09:52:47.989Z",
+      "answers": {}
+    },
+    {
+      "id": "79733980-18eb-46a8-bd72-bf4698b1aaae",
+      "quizId": "46961609-fe9d-46b3-ba39-b2959cbb737a",
+      "studentName": "Quang Hung",
+      "studentCode": "",
+      "studentEmail": "",
+      "score": 19,
+      "total": 83,
+      "submittedAt": "2026-01-15T09:59:20.926Z",
+      "answers": {
+        "0": "HSF301",
+        "1": "Java Program Architecture",
+        "2": "Creating UIs",
+        "3": "Memory allocation",
+        "4": "JDBCDriver",
+        "5": "Java Program Quality Language",
+        "6": "@Persistent",
+        "7": "Defines table schema",
+        "8": "Marks field to be persisted",
+        "9": "The name of table",
+        "10": "@OneToOne",
+        "11": "@OneToOne",
+        "12": "Increased productivity",
+        "13": "Struts",
+        "14": "@Basic",
+        "15": "Manage entity lifecycle",
+        "16": "em.save()",
+        "17": "em.find()",
+        "18": "em.delete()",
+        "19": "@Enum",
+        "20": "persistence.xml",
+        "21": "Define entity structure",
+        "22": "@Skip",
+        "23": "SQL-based",
+        "24": "em.saveOrUpdate()",
+        "25": "em.query()",
+        "26": "@OneToOne",
+        "27": "Mapping to a DB column",
+        "28": "Reduced boilerplate code",
+        "29": "Manual rollback only",
+        "30": ".xml",
+        "31": "Query database",
+        "32": "PostgreSQL",
+        "33": "2.1",
+        "34": "Mapping services",
+        "35": "Logging queries",
+        "36": "Manual SQL writing",
+        "37": "Hibernate",
+        "38": "hsf301.com.controller",
+        "39": "pom.xml",
+        "40": "StudentDAO",
+        "41": "Factory",
+        "42": "Handle UI design",
+        "43": "2005",
+        "44": "Monolithic",
+        "45": "Inversion of Control",
+        "46": "Direct Injection",
+        "47": "Slower testing",
+        "48": "ObjectMapper",
+        "49": "View, Model, Controller",
+        "50": "Context",
+        "51": "Context",
+        "52": "SpEL",
+        "53": "SQL syntax",
+        "54": "ORM",
+        "55": "WebSocket setup",
+        "56": "OXM",
+        "57": "SpEL",
+        "58": "Web-Socket",
+        "59": "Non-modular architecture",
+        "60": "Java 17",
+        "61": "jpkg",
+        "62": "Gradle",
+        "63": "Complex setup",
+        "64": "Interface & Constructor",
+        "65": "@InjectField",
+        "66": "@Construct",
+        "67": "@Name",
+        "68": "@PostConstruct",
+        "69": "@OnDestroy",
+        "70": "Provide JSP rendering",
+        "71": "Mark web controller",
+        "72": "Advanced Object Processing",
+        "73": "Method parameter",
+        "74": "Execution point for advice",
+        "75": "Annotation",
+        "76": "Joiner",
+        "77": "More code",
+        "78": "Java 6",
+        "79": "@Init",
+        "80": "Registering annotations",
+        "81": "OCP",
+        "82": "Service layer class"
+      }
+    },
+    {
+      "id": "1d42f0f1-c1a6-4cb0-bc58-9c0e04987be1",
+      "quizId": "46961609-fe9d-46b3-ba39-b2959cbb737a",
+      "studentName": "Debug User 2",
+      "studentCode": "",
+      "studentEmail": "",
+      "score": 1,
+      "total": 83,
+      "submittedAt": "2026-01-15T10:02:45.133Z",
+      "answers": {
+        "0": "HSF302"
+      }
+    }
+  ],
+  "ce43b68e-2618-4764-b878-6ead6d59f19d": [
+    {
+      "id": "dceb01cd-df3d-426d-960e-91811e7f9b89",
+      "quizId": "ce43b68e-2618-4764-b878-6ead6d59f19d",
+      "studentName": "Tran VAn Ben",
+      "studentCode": "",
+      "studentEmail": "",
+      "score": 30,
+      "total": 83,
+      "submittedAt": "2026-01-15T10:11:07.035Z",
+      "answers": {
+        "0": "HSF300",
+        "1": "Java Persistence API",
+        "3": "Data persistence",
+        "4": "JDBCDriver",
+        "5": "Java Program Quality Language",
+        "6": "@Persistent",
+        "7": "Defines table schema",
+        "8": "Marks field to be indexed",
+        "9": "The unique ID of an entity",
+        "10": "@JoinOne",
+        "11": "@OneToOne",
+        "12": "Improved maintainability",
+        "13": "Thymeleaf",
+        "14": "@Simple",
+        "15": "Create unit tests",
+        "16": "em.persist()",
+        "17": "em.get()",
+        "18": "em.destroy()",
+        "19": "@Enum",
+        "20": "persistence.xml",
+        "21": "Define reusable queries",
+        "22": "@Transient",
+        "23": "Object-oriented",
+        "24": "em.update()",
+        "25": "em.query()",
+        "26": "@OneToMany",
+        "27": "Mapping to a DB column",
+        "28": "Reduced boilerplate code",
+        "29": "Transaction management",
+        "30": ".xml",
+        "31": "Remove entity",
+        "32": "MySQL",
+        "33": "2.2",
+        "34": "Compiling entities",
+        "35": "Many-to-many relationships",
+        "36": "Manual SQL writing",
+        "37": "DataNucleus",
+        "38": "hsf301.com.controller",
+        "39": "build.gradle",
+        "40": "StudentService",
+        "41": "Repository",
+        "42": "Handle UI design",
+        "43": "2003",
+        "44": "Servlet-based",
+        "45": "Inversion of Control",
+        "46": "Direct Injection",
+        "47": "Tighter coupling",
+        "48": "ObjectMapper",
+        "49": "View, Model, Controller",
+        "50": "Beans",
+        "51": "Context",
+        "52": "ORM",
+        "53": "ORM logic",
+        "54": "ORM",
+        "55": "Messaging",
+        "56": "XMLBeans",
+        "57": "Web",
+        "58": "Web-MVC",
+        "59": "Non-modular architecture",
+        "60": "Java 11",
+        "61": "springx",
+        "62": "Maven",
+        "63": "Slower builds",
+        "64": "Constructor & Setter",
+        "65": "@Autowired",
+        "66": "@Autowired",
+        "67": "@ID",
+        "68": "@PostConstruct",
+        "69": "@PreDestroy",
+        "70": "Backbone of the app",
+        "71": "Define service bean",
+        "72": "Aspect-Oriented Programming",
+        "73": "Class instance",
+        "74": "REST API",
+        "75": "Annotation",
+        "76": "Cutpoint",
+        "77": "More code",
+        "78": "Spring 2.0",
+        "79": "@PreDestroy",
+        "80": "Registering annotations",
+        "81": "DIP",
+        "82": "General component"
+      }
+    },
+    {
+      "id": "4f0ff33a-fcb1-4b23-a169-73169f5c9808",
+      "quizId": "ce43b68e-2618-4764-b878-6ead6d59f19d",
+      "studentName": "Vu Van C",
+      "studentCode": "",
+      "studentEmail": "",
+      "score": 2,
+      "total": 83,
+      "submittedAt": "2026-01-15T10:13:42.935Z",
+      "answers": {
+        "0": "HSF302",
+        "1": "Java Persistence API",
+        "2": "Handling networking",
+        "3": "Memory allocation",
+        "5": "Java Program Quality Language"
+      }
+    }
+  ],
+  "4acb6e43-faf4-48bf-bb1a-8e3fb9bccf54": [
+    {
+      "id": "fe4ec7b9-0c0f-4f73-a762-4a4f16e2047a",
+      "quizId": "4acb6e43-faf4-48bf-bb1a-8e3fb9bccf54",
+      "studentName": "Quang Hung",
+      "studentCode": "",
+      "studentEmail": "",
+      "score": 5,
+      "total": 83,
+      "submittedAt": "2026-01-15T15:22:29.244Z",
+      "answers": {
+        "0": "HSF300",
+        "1": "Java Persistence API",
+        "2": "Handling networking",
+        "3": "Memory allocation",
+        "4": "EntityManager",
+        "5": "Java Program Quality Language",
+        "6": "@Persistent",
+        "7": "Defines table schema",
+        "8": "Marks field to be indexed",
+        "9": "The unique ID of an entity",
+        "10": "@OneToOne",
+        "11": "@OneToMany",
+        "12": "Improved maintainability",
+        "13": "Hibernate"
+      }
+    },
+    {
+      "id": "d290a09c-e255-4e85-b08c-f1736190161b",
+      "quizId": "4acb6e43-faf4-48bf-bb1a-8e3fb9bccf54",
+      "studentName": "quang hai",
+      "studentCode": "",
+      "studentEmail": "",
+      "score": 11,
+      "total": 83,
+      "submittedAt": "2026-01-15T15:23:34.447Z",
+      "answers": {
+        "0": "HSF300",
+        "1": "Java Persistence API",
+        "2": "Managing relational data using OOP",
+        "5": "Java Program Quality Language",
+        "7": "Maps entity to DB table",
+        "8": "Marks field not to be persisted",
+        "10": "@ManyToOne",
+        "11": "@ManyToMany",
+        "37": "DataNucleus",
+        "45": "Interface of Communication",
+        "55": "RESTful APIs",
+        "62": "Ant",
+        "64": "Interface & Constructor",
+        "66": "@Construct",
+        "67": "@ID",
+        "68": "@PostConstruct",
+        "70": "Backbone of the app",
+        "72": "Application Object Programming",
+        "73": "Class instance",
+        "74": "REST API",
+        "76": "Pointcut",
+        "77": "More code",
+        "78": "Spring Framework 6",
+        "79": "@PostConstruct",
+        "80": "Adding multiple references"
+      }
+    }
+  ],
+  "2824323e-86ac-4002-ae6c-3965c15ceded": [
+    {
+      "id": "d52bb7e7-bbcc-4298-bfcd-b290ede450b9",
+      "quizId": "2824323e-86ac-4002-ae6c-3965c15ceded",
+      "studentName": "StudentTest",
+      "studentCode": "123",
+      "studentEmail": "",
+      "score": 1,
+      "total": 1,
+      "submittedAt": "2026-01-16T08:13:35.146Z",
+      "answers": {
+        "0": "2"
+      }
+    }
+  ],
+  "97e41cf0-682c-40e8-a0cd-3fc22ae666eb": [
+    {
+      "id": "f5895023-0e9c-427b-b59f-002b890e6b5c",
+      "quizId": "97e41cf0-682c-40e8-a0cd-3fc22ae666eb",
+      "studentName": "StudentTest",
+      "studentCode": "123",
+      "studentEmail": "",
+      "score": 1,
+      "total": 1,
+      "submittedAt": "2026-01-16T08:13:35.231Z",
+      "answers": {
+        "0": "2"
+      }
+    }
+  ],
+  "899c2435-54b3-4bfe-affb-160cc7905b5e": [
+    {
+      "id": "8cfc324b-9ff4-45ed-b990-b912e49a35c9",
+      "quizId": "899c2435-54b3-4bfe-affb-160cc7905b5e",
+      "studentName": "StudentTest",
+      "studentCode": "123",
+      "studentEmail": "",
+      "score": 1,
+      "total": 1,
+      "submittedAt": "2026-01-16T08:13:35.298Z",
+      "answers": {
+        "0": "2"
+      }
+    }
+  ],
+  "f30a1aab-ae44-4886-80c8-4cb35200fec6": [
+    {
+      "id": "377c9468-a6b6-412c-8c4c-8041bad19be2",
+      "quizId": "f30a1aab-ae44-4886-80c8-4cb35200fec6",
+      "studentName": "StudentTest",
+      "studentCode": "123",
+      "studentEmail": "",
+      "score": 1,
+      "total": 1,
+      "submittedAt": "2026-01-16T08:13:53.213Z",
+      "answers": {
+        "0": "2"
+      }
+    }
+  ],
+  "1cb3eae6-d0c4-4d2d-9aa9-c740b6513721": [
+    {
+      "id": "822dff16-650d-4f5e-b1c9-86ebf4c2ce1c",
+      "quizId": "1cb3eae6-d0c4-4d2d-9aa9-c740b6513721",
+      "studentName": "StudentTest",
+      "studentCode": "123",
+      "studentEmail": "",
+      "score": 1,
+      "total": 1,
+      "submittedAt": "2026-01-16T08:13:53.266Z",
+      "answers": {
+        "0": "2"
+      }
+    }
+  ],
+  "f62472bb-4826-4c62-a27f-fb5626ee98c1": [
+    {
+      "id": "72e77be5-7636-493f-ba98-b71474e82af0",
+      "quizId": "f62472bb-4826-4c62-a27f-fb5626ee98c1",
+      "studentName": "StudentTest",
+      "studentCode": "123",
+      "studentEmail": "",
+      "score": 1,
+      "total": 1,
+      "submittedAt": "2026-01-16T08:13:53.327Z",
+      "answers": {
+        "0": "2"
+      }
+    }
+  ],
+  "9c6e5afe-b317-4cd6-91fb-604ce23dbc2a": [
+    {
+      "id": "97db70e9-0b86-4406-ba6d-17c3e598b1fc",
+      "quizId": "9c6e5afe-b317-4cd6-91fb-604ce23dbc2a",
+      "studentName": "StudentTest",
+      "studentCode": "123",
+      "studentEmail": "",
+      "score": 1,
+      "total": 1,
+      "submittedAt": "2026-01-16T08:14:41.191Z",
+      "answers": {
+        "0": "2"
+      }
+    }
+  ],
+  "fd7820ce-14c5-443b-a64c-1c009261136d": [
+    {
+      "id": "57f115d0-58cb-4e43-bfc4-11847fe30b64",
+      "quizId": "fd7820ce-14c5-443b-a64c-1c009261136d",
+      "studentName": "an",
+      "studentCode": "ph0001",
+      "studentEmail": "an@gmail.com",
+      "score": 4,
+      "total": 11,
+      "submittedAt": "2026-01-23T17:11:20.401Z",
+      "answers": {
+        "1": "4",
+        "2": "JavaScript",
+        "3": "Hồ Xuân Hương",
+        "4": "Gấu trúc",
+        "5": "Option 2",
+        "6": "HSF300",
+        "7": "Java Persistence API",
+        "8": "Managing relational data using OOP",
+        "10": "JDBCDriver"
+      }
+    }
+  ],
+  "0d7b45f3-5ba2-419b-b6db-ff4e4ee0d134": [
+    {
+      "id": "08206f10-0447-4cf0-8c82-6efd15caacd1",
+      "quizId": "0d7b45f3-5ba2-419b-b6db-ff4e4ee0d134",
+      "studentName": "binh",
+      "studentCode": "",
+      "studentEmail": "",
+      "score": 2,
+      "total": 11,
+      "submittedAt": "2026-01-23T17:34:57.614Z",
+      "answers": {
+        "0": "Đà Nẵng",
+        "1": "4",
+        "2": "Java",
+        "3": "Hồ Xuân Hương",
+        "4": "Gấu trúc",
+        "5": "Option 3",
+        "6": "HSF300",
+        "7": "Java Process Agent",
+        "8": "Handling networking",
+        "9": "Thread management",
+        "10": "EntityManager"
+      }
+    }
+  ],
+  "3206035a-c15c-494f-a7f1-b543a83ec004": [
+    {
+      "id": "ff4dfae4-924a-41ad-a566-5ed9cc0c5c07",
+      "quizId": "3206035a-c15c-494f-a7f1-b543a83ec004",
+      "studentName": "binh",
+      "studentCode": "",
+      "studentEmail": "aa@gmail.com",
+      "score": 2,
+      "total": 11,
+      "submittedAt": "2026-01-23T17:45:11.937Z",
+      "answers": {
+        "3": "Hồ Xuân Hương",
+        "4": "Gấu trúc",
+        "5": "Option 3",
+        "6": "HSF302",
+        "7": "Java Persistence API",
+        "10": "JDBCDriver"
+      }
+    }
+  ],
+  "18c471d5-3613-4229-8ee0-79dd8f11a94d": [
+    {
+      "id": "11bb2a47-d7e7-4c0b-ac44-43812c2df549",
+      "quizId": "18c471d5-3613-4229-8ee0-79dd8f11a94d",
+      "studentName": "Auto-Submitted (No Name)",
+      "studentCode": "",
+      "studentEmail": "",
+      "score": 1,
+      "total": 11,
+      "submittedAt": "2026-01-23T18:28:08.756Z",
+      "answers": {
+        "0": "Hồ Chí Minh",
+        "4": "Gấu trúc",
+        "6": "HSF302",
+        "8": "Handling networking",
+        "9": "Memory allocation"
+      }
+    }
+  ],
+  "24908a56-3992-46ff-b09e-faac98771ddb": [
+    {
+      "id": "8f7ca12e-7a6f-4b09-b983-ad1dfa94c85d",
+      "quizId": "24908a56-3992-46ff-b09e-faac98771ddb",
+      "studentName": "t",
+      "studentCode": "t",
+      "classCode": "t",
+      "subjectCode": "t",
+      "studentEmail": "t",
+      "score": 3,
+      "total": 11,
+      "submittedAt": "2026-01-23T19:28:14.222Z",
+      "answers": {
+        "0": "Hồ Chí Minh",
+        "1": "4",
+        "2": "Java",
+        "3": "Hồ Xuân Hương",
+        "4": "Gấu trúc",
+        "5": "Option 3",
+        "6": "HSF300",
+        "7": "Java Persistence API",
+        "8": "Managing relational data using OOP",
+        "9": "Memory allocation",
+        "10": "JDBCDriver"
+      }
+    }
+  ],
+  "95c32e59-409d-4e26-98a8-df3a40435af6": [
+    {
+      "id": "aa96e724-598e-4216-9223-f60e767bc6e0",
+      "quizId": "95c32e59-409d-4e26-98a8-df3a40435af6",
+      "studentName": "binh",
+      "studentCode": "df",
+      "classCode": "dfd",
+      "subjectCode": "dfd",
+      "studentEmail": "an@gmail.com",
+      "score": 4,
+      "total": 11,
+      "submittedAt": "2026-01-23T19:48:13.281Z",
+      "answers": {
+        "0": "Hồ Chí Minh",
+        "1": "4",
+        "2": "JavaScript",
+        "3": "Hồ Xuân Hương",
+        "4": "Gấu trúc",
+        "5": "Option 2",
+        "6": "HSF300",
+        "7": "Java Persistence API",
+        "8": "Managing relational data using OOP",
+        "9": "Memory allocation",
+        "10": "JDBCDriver"
+      }
+    }
+  ],
+  "703ba6b9-75ba-40c2-995c-8a30f6f5e53c": [
+    {
+      "id": "73511d23-b3ce-4a38-ba12-07119e3af536",
+      "quizId": "703ba6b9-75ba-40c2-995c-8a30f6f5e53c",
+      "studentName": "nguuyen van a",
+      "studentCode": "fadf",
+      "classCode": "ff",
+      "subjectCode": "fff",
+      "studentEmail": "ff@gmail.com",
+      "score": 1,
+      "total": 11,
+      "submittedAt": "2026-01-23T19:55:18.155Z",
+      "answers": {
+        "0": "Hồ Chí Minh",
+        "1": "4",
+        "2": "Java",
+        "3": "Hồ Xuân Hương",
+        "4": "Gấu trúc",
+        "5": "Option 2",
+        "6": "HSF300",
+        "7": "Java Platform Access",
+        "8": "Handling networking",
+        "9": "Memory allocation",
+        "10": "DataManager"
+      }
+    }
+  ],
+  "635d1ea5-49b7-4b10-b25c-6e14fbce5d15": [
+    {
+      "id": "883d0004-fbc2-4a7a-8b5d-20a807c0b515",
+      "quizId": "635d1ea5-49b7-4b10-b25c-6e14fbce5d15",
+      "studentName": "an",
+      "studentCode": "ph01",
+      "classCode": "abc",
+      "subjectCode": "bbb",
+      "studentEmail": "hung@gmail.com",
+      "score": 3,
+      "total": 11,
+      "submittedAt": "2026-01-23T20:00:17.248Z",
+      "answers": {
+        "0": "Hồ Chí Minh",
+        "1": "4",
+        "2": "Python",
+        "3": "Nguyễn Du",
+        "4": "Kangaroo",
+        "5": "Option 2",
+        "6": "HSF301",
+        "7": "Java Program Architecture",
+        "8": "Handling networking",
+        "9": "Memory allocation",
+        "10": "DataManager"
+      }
+    },
+    {
+      "id": "d25db0fb-77e6-49c5-9e81-250509022a61",
+      "quizId": "635d1ea5-49b7-4b10-b25c-6e14fbce5d15",
+      "studentName": "binh",
+      "studentCode": "y",
+      "classCode": "y",
+      "subjectCode": "y",
+      "studentEmail": "aa@gmail.com",
+      "score": 4,
+      "total": 11,
+      "submittedAt": "2026-01-23T20:01:10.574Z",
+      "answers": {
+        "0": "Hà Nội",
+        "1": "4",
+        "2": "JavaScript",
+        "3": "Hồ Xuân Hương",
+        "4": "Gấu trúc",
+        "5": "Option 3",
+        "6": "HSF302",
+        "7": "Java Platform Access",
+        "8": "Handling networking",
+        "9": "Memory allocation",
+        "10": "JDBCDriver"
+      }
+    }
+  ],
+  "c3cebb51-5e07-4159-9218-4080157349e8": [
+    {
+      "id": "2a1b98fd-fe08-4936-ada2-611abeef7c0b",
+      "quizId": "c3cebb51-5e07-4159-9218-4080157349e8",
+      "studentName": "g",
+      "studentCode": "t",
+      "classCode": "gg",
+      "subjectCode": "gg",
+      "studentEmail": "gg",
+      "score": 2,
+      "total": 11,
+      "submittedAt": "2026-01-28T03:53:04.190Z",
+      "answers": {
+        "0": "Hải Phòng",
+        "1": "5",
+        "2": "JavaScript",
+        "3": "Nguyễn Trãi",
+        "4": "Sư tử",
+        "5": "Option 4",
+        "6": "HSF303",
+        "7": "Java Process Agent",
+        "8": "Handling networking",
+        "9": "Data persistence",
+        "10": "DatabaseConnector"
+      }
+    }
+  ]
+}

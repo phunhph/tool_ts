@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Hướng dẫn cách tạo file Excel để nhập câu hỏi trắc nghiệm lên hệ thống Quizzes.io.vn.">
+    <meta name="keywords"
+        content="quiz creation guide, excel template tutorial, how to make quiz, quiz format instructions">
+    <title>Hướng dẫn tạo file Excel - Quizzes.io.vn</title>
+    <link rel="stylesheet" href="style.css?v=1.1">
+    <link rel="canonical" href="https://poly.quizzes.io.vn/guide.html">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="Hướng dẫn tạo file Excel - Quizzes.io.vn">
+    <meta property="og:description"
+        content="Hướng dẫn cách tạo file Excel để nhập câu hỏi trắc nghiệm lên hệ thống Quizzes.io.vn.">
+    <meta property="og:url" content="https://poly.quizzes.io.vn/guide.html">
+    <meta property="og:type" content="article">
+    <link rel="icon" type="image/x-icon" href="favicon.svg" type="image/svg+xml">
+    <style>
+        .guide-container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1,
+        h2 {
+            color: #2c3e50;
+        }
+
+        .example-image {
+            width: 100%;
+            height: auto;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        .note {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 15px;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="container">
+            <div class="logo-container">
+                <a href="index.html">
+                    <img src="images/logo.png" alt="FPT Logo" class="logo-img">
+                    <!-- <div class="logo-fpt">
+                        <span class="orange">F</span><span class="black">P</span><span class="orange">T</span>
+                        <span
+                            style="font-size: 1.1rem; margin-left: 4px; font-weight: 600; color: var(--secondary); vertical-align: middle;">Quiz</span>
+                    </div> -->
+                </a>
+            </div>
+            <nav>
+                <ul class="site-menu">
+                    <li><a href="create.html" data-i18n="nav_create">Create Quizzes</a></li>
+                    <li><a href="assessment-list.html" data-i18n="nav_assessment">Giải mã ngành học</a></li>
+                    <li><a href="#" data-i18n="nav_blog">Blog</a></li>
+                    <li class="dropdown">
+                        <a href="#" data-i18n="nav_lang">Language ▾</a>
+                        <ul class="dropdown-content">
+                            <li><a href="#" onclick="setLanguage('en')">English</a></li>
+                            <li><a href="#" onclick="setLanguage('vi')">Tiếng Việt</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="guide-container">
+        <h1 data-i18n="guide_title">Hướng dẫn tạo file câu hỏi Excel</h1>
+        <p data-i18n="guide_desc">Để tạo đề thi trắc nghiệm, bạn cần chuẩn bị một file Excel (.xlsx hoặc .xls) theo đúng
+            định dạng dưới đây.
+        </p>
+
+        <h2 data-i18n="guide_sec1">1. Cấu trúc file Excel</h2>
+        <p data-i18n="guide_sec1_desc">File Excel cần có các cột theo thứ tự sau:</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th data-i18n="th_col_name">Tên cột</th>
+                    <th data-i18n="th_desc">Mô tả</th>
+                    <th data-i18n="th_example">Ví dụ</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Câu hỏi</strong></td>
+                    <td>Nội dung câu hỏi</td>
+                    <td>Thủ đô của Việt Nam là gì?</td>
+                </tr>
+                <tr>
+                    <td><strong>Đáp án 1</strong></td>
+                    <td>Lựa chọn A</td>
+                    <td>Hà Nội</td>
+                </tr>
+                <tr>
+                    <td><strong>Đáp án 2</strong></td>
+                    <td>Lựa chọn B</td>
+                    <td>Hồ Chí Minh</td>
+                </tr>
+                <tr>
+                    <td><strong>Đáp án 3</strong></td>
+                    <td>Lựa chọn C</td>
+                    <td>Đà Nẵng</td>
+                </tr>
+                <tr>
+                    <td><strong>Đáp án 4</strong></td>
+                    <td>Lựa chọn D</td>
+                    <td>Hải Phòng</td>
+                </tr>
+                <tr>
+                    <td><strong>Phương án đúng</strong></td>
+                    <td>Đáp án chính xác (Phải trùng khớp hoàn toàn với một trong các lựa chọn)</td>
+                    <td>Hà Nội</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2 data-i18n="guide_sec2">2. Hình ảnh minh họa</h2>
+        <p data-i18n="guide_sec2_desc">Dưới đây là hình ảnh ví dụ về cách nhập dữ liệu trong file Excel:</p>
+        <img src="images/excel_template_example.png" alt="Ví dụ mẫu file Excel" class="example-image">
+
+        <div class="note">
+            <strong data-i18n="note_title">Lưu ý:</strong>
+            <ul>
+                <li data-i18n="note_1">Tiêu đề cột ở dòng đầu tiên không quan trọng, hệ thống sẽ đọc theo thứ tự cột.
+                </li>
+                <li data-i18n="note_2">Tuy nhiên, để dễ quản lý, bạn nên đặt tiêu đề như hình trên.</li>
+                <li data-i18n="note_3">Hệ thống hỗ trợ cả tiếng Việt có dấu.</li>
+            </ul>
+        </div>
+
+        <div style="margin-top: 2rem; text-align: center;">
+            <a href="create.html" class="btn-primary" style="text-decoration: none; padding: 10px 20px;"
+                data-i18n="nav_create">Quay lại trang
+                tạo đề thi</a>
+        </div>
+    </div>
+
+   <footer class="site-footer">
+        <p data-i18n="footer_text">© 2019 - 2026 FPT Hà Nội. 2026 . All rights reserved. | <a
+                href="privacy.html">Privacy</a> |
+            <a href="policy.html">Policy</a>
+        </p>
+    </footer>
+    
+<script src="js/translations.js?v=1.1"></script>
+</body>
+
+</html>

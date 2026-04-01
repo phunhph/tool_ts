@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-i18n="assessment_list_page_title">Danh sách đề Giải mã ngành học</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=2.0">
+    <style>
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-body); 
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+
+        /* Main Card */
+        .form-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+            border: 1px solid #fff;
+        }
+
+        .form-card-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .icon-box {
+            width: 48px;
+            height: 48px;
+            background: var(--primary-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-size: 24px;
+        }
+        .form-card-title { font-size: 1.5rem; font-weight: 700; color: #0f172a; }
+        .form-card-desc { color: var(--text-sub); font-size: 0.9rem; }
+
+        /* Toolbar */
+        .assessment-toolbar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .assessment-search {
+            flex: 1;
+            min-width: 280px;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            transition: 0.3s;
+        }
+        .assessment-search:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        /* Table Design */
+        .table-container { background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; }
+        .assessment-table { width: 100%; border-collapse: collapse; }
+        .assessment-table th {
+            background: #f8fafc;
+            padding: 16px;
+            text-align: left;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-sub);
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .assessment-table td { padding: 16px; border-bottom: 1px solid #f1f5f9; font-size: 0.95rem; }
+        .assessment-table tr:hover { background-color: #f8fafc; }
+
+        /* Buttons & Actions */
+        .btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-secondary { background: #e2e8f0; color: #475569; }
+        .btn-secondary:hover { background: #cbd5e1; }
+
+        .mini-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        .mini-primary { background: #eff6ff; color: var(--primary); }
+        .mini-primary:hover { background: var(--primary); color: #fff; }
+        .mini-success { background: #ecfdf5; color: var(--success); }
+        .mini-success:hover { background: var(--success); color: #fff; }
+        .mini-danger { background: #fef2f2; color: var(--danger); }
+        .mini-danger:hover { background: var(--danger); color: #fff; }
+        .assessment-actions { display: flex; gap: 8px; }
+
+        /* RESPONSIVE: Table to Cards */
+        @media (max-width: 850px) {
+            .assessment-table thead { display: none; }
+            .assessment-table, .assessment-table tbody, .assessment-table tr, .assessment-table td { display: block; width: 100%; }
+            .assessment-table tr { margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; padding: 10px; }
+            .assessment-table td { text-align: right; padding-left: 50%; position: relative; border-bottom: 1px solid #f1f5f9; }
+            .assessment-table td::before {
+                content: attr(data-label);
+                position: absolute; left: 15px; width: 45%; text-align: left;
+                font-weight: 700; color: var(--text-sub); font-size: 0.8rem;
+            }
+            .assessment-table td:last-child { border: none; }
+            .assessment-actions { justify-content: flex-end; gap: 5px; }
+            .assessment-actions .mini-btn {
+                width: 34px;
+                height: 34px;
+                padding: 0;
+                font-size: 0;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 8px;
+            }
+            .assessment-actions .mini-btn::before {
+                content: attr(data-icon);
+                font-size: 16px;
+                line-height: 1;
+            }
+        }
+
+        /* Modal & Toast */
+        .modal-backdrop {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6);
+            display: none; align-items: center; justify-content: center; z-index: 9999;
+        }
+        .modal-card { width: 400px; background: #fff; border-radius: 16px; padding: 24px; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        .toast-msg {
+            position: fixed; bottom: 20px; right: 20px; padding: 12px 24px; 
+            background: #1e293b; color: #fff; border-radius: 12px; display: none; z-index: 10000;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="site-header">
+        <div class="container">
+            <div class="logo-container">
+                <a href="index.html">
+                    <img src="images/logo.png" alt="FPT Logo" class="logo-img">
+                    <!-- <div class="logo-fpt">
+                        <span class="orange">F</span><span class="black">P</span><span class="orange">T</span>
+                        <span
+                            style="font-size: 1.1rem; margin-left: 4px; font-weight: 600; color: var(--secondary); vertical-align: middle;">Quiz</span>
+                    </div> -->
+                </a>
+            </div>
+            <nav>
+                <ul class="site-menu">
+                    <li><a href="create.html" data-i18n="nav_create">Create Quizzes</a></li>
+                    <li><a href="assessment-list.html" data-i18n="nav_assessment">Giải mã ngành học</a></li>
+                    <li><a href="#" data-i18n="nav_blog">Blog</a></li>
+                    <li class="dropdown">
+                        <a href="#" data-i18n="nav_lang">Language ▾</a>
+                        <ul class="dropdown-content">
+                            <li><a href="#" onclick="setLanguage('en')">English</a></li>
+                            <li><a href="#" onclick="setLanguage('vi')">Tiếng Việt</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+
+    <main class="container">
+        <div class="form-card">
+            <div class="form-card-header">
+                <div class="icon-box">🧭</div>
+                <div>
+                    <h1 class="form-card-title" data-i18n="assessment_list_title">Danh sách đề Giải mã ngành học</h1>
+                    <p class="form-card-desc" data-i18n="assessment_list_desc">Hiển thị toàn bộ đề assessment đã tạo trên hệ thống.</p>
+                </div>
+            </div>
+
+            <div class="assessment-toolbar">
+                <input id="searchInput" class="assessment-search" type="text" data-i18n="assessment_list_search_ph" placeholder="Tìm theo tên đề..." />
+                <button id="reloadBtn" class="btn btn-secondary" data-i18n="assessment_list_reload">Tải lại</button>
+            </div>
+
+            <div class="table-container">
+                <table class="assessment-table" id="assessmentTable">
+                    <thead>
+                        <tr>
+                            <th data-i18n="assessment_list_col_title">Tên đề</th>
+                            <th>ID</th>
+                            <th data-i18n="assessment_list_col_teacher">Người tạo</th>
+                            <th data-i18n="assessment_list_col_created">Ngày tạo</th>
+                            <th data-i18n="assessment_list_col_actions">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+                <div id="emptyState" style="padding: 40px; text-align: center; color: var(--text-sub); display: none;" data-i18n="assessment_list_empty">
+                    Không có đề nào.
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="deleteModal" class="modal-backdrop">
+        <div class="modal-card">
+            <h3 style="margin-bottom: 12px;" data-i18n="assessment_list_delete_title">Xác nhận xóa đề</h3>
+            <p id="deleteModalDesc" style="color: var(--text-sub); font-size: 0.9rem; margin-bottom: 20px;"></p>
+            <input id="deletePasswordInput" type="password" data-i18n="assessment_list_delete_password_ph" placeholder="Để trống nếu không đặt mật khẩu" 
+                   style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 20px;">
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="deleteCancelBtn" class="btn btn-secondary" data-i18n="assessment_list_cancel">Hủy</button>
+                <button id="deleteConfirmBtn" class="btn" style="background: var(--danger); color: #fff;" data-i18n="assessment_list_delete_action">Xóa đề</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastMsg" class="toast-msg"></div>
+
+    <script src="js/translations.js?v=1.1"></script>
+    <script>
+        const tableBody = document.querySelector('#assessmentTable tbody');
+        const emptyState = document.getElementById('emptyState');
+        const searchInput = document.getElementById('searchInput');
+        const deleteModal = document.getElementById('deleteModal');
+        const deletePasswordInput = document.getElementById('deletePasswordInput');
+        const toastMsg = document.getElementById('toastMsg');
+        let deletingQuizId = '';
+
+        function t(key, fallback) {
+            const lang = localStorage.getItem('lang') || 'vi';
+            if (typeof translations !== 'undefined' && translations[lang] && translations[lang][key]) {
+                return translations[lang][key];
+            }
+            return fallback || key;
+        }
+
+        let listItems = [];
+
+        function showToast(message, isError = false) {
+            toastMsg.textContent = message;
+            toastMsg.style.display = 'block';
+            toastMsg.style.background = isError ? '#ef4444' : '#1e293b';
+            setTimeout(() => { toastMsg.style.display = 'none'; }, 3000);
+        }
+
+        async function fetchAssessments() {
+            const qs = new URLSearchParams();
+            const search = String(searchInput.value || '').trim();
+            if (search) qs.set('search', search);
+            const url = '/api/assessments/quizzes' + (qs.toString() ? ('?' + qs.toString()) : '');
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error(t('assessment_list_load_error', 'Không tải được danh sách đề.'));
+            const data = await resp.json();
+            return Array.isArray(data.items) ? data.items : [];
+        }
+
+        function renderRows(items) {
+            tableBody.innerHTML = '';
+            if (items.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            }
+            emptyState.style.display = 'none';
+
+            items.forEach(it => {
+                const tr = document.createElement('tr');
+                const previewLink = `assessment-result.html?id=${it.id}`;
+                const studentLink = `assessment.html?id=${it.id}`;
+
+                tr.innerHTML = `
+                    <td data-label="${t('assessment_list_col_title','Tên đề')}"><strong>${it.title}</strong></td>
+                    <td data-label="ID"><code style="background:#f1f5f9; padding:2px 6px; border-radius:4px;">${it.id}</code></td>
+                    <td data-label="${t('assessment_list_col_teacher','Người tạo')}">${it.teacherName}</td>
+                    <td data-label="${t('assessment_list_col_created','Ngày tạo')}">${new Date(it.createdAt).toLocaleDateString('vi-VN')}</td>
+                    <td data-label="${t('assessment_list_col_actions','Thao tác')}">
+                        <div class="assessment-actions">
+                            <a class="mini-btn mini-primary" data-icon="👁️" title="${t('assessment_list_btn_preview','Xem đề')}" aria-label="${t('assessment_list_btn_preview','Xem đề')}" href="${previewLink}">${t('assessment_list_btn_preview','Xem đề')}</a>
+                            <a class="mini-btn mini-success" data-icon="📝" title="${t('assessment_list_btn_take','Vào thi')}" aria-label="${t('assessment_list_btn_take','Vào thi')}" href="${studentLink}">${t('assessment_list_btn_take','Vào thi')}</a>
+                            <button class="mini-btn mini-danger" data-icon="🗑️" title="${t('assessment_list_btn_delete','Xóa đề')}" aria-label="${t('assessment_list_btn_delete','Xóa đề')}" onclick="openDeleteModal('${it.id}', '${it.title}')">${t('assessment_list_btn_delete','Xóa đề')}</button>
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function openDeleteModal(id, title) {
+            deletingQuizId = id;
+            document.getElementById('deleteModalDesc').textContent = t('assessment_list_delete_confirm','Bạn chắc chắn muốn xóa đề "{title}"? Hành động không thể hoàn tác.').replace('{title}', title);
+            deleteModal.style.display = 'flex';
+        }
+
+        document.getElementById('deleteCancelBtn').onclick = () => deleteModal.style.display = 'none';
+
+        // Khởi tạo tải dữ liệu
+        async function loadList() {
+            try {
+                listItems = await fetchAssessments();
+                renderRows(listItems);
+            } catch (e) {
+                showToast(t('assessment_list_server_error',"Lỗi tải dữ liệu."), true);
+                renderRows([]);
+            }
+        }
+
+        searchInput.oninput = () => {
+            const val = searchInput.value.toLowerCase();
+            const filtered = listItems.filter(i =>
+                String(i.title || '').toLowerCase().includes(val) ||
+                String(i.id || '').toLowerCase().includes(val)
+            );
+            renderRows(filtered);
+        };
+
+        const currentLang = localStorage.getItem('lang') || 'vi';
+        if (typeof setLanguage === 'function') setLanguage(currentLang);
+        loadList();
+    </script>
+</body>
+</html>

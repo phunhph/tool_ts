@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản trị</title>
+    <link rel="stylesheet" href="style.css?v=2.0">
+    <style>
+        /* ---- Admin Page Styles ---- */
+        body {
+            background: #ffffff;
+            min-height: 100vh;
+            color: var(--text);
+        }
+
+        /* Login Page */
+        .login-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 32px 36px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 8px 30px rgba(16, 24, 40, 0.08);
+        }
+
+        .center-logo {
+            display: block;
+            margin: 0 auto 10px;
+            height: 56px;
+            width: auto;
+        }
+
+        .login-card h2 {
+            text-align: center;
+            color: var(--primary);
+            font-size: 1.4rem;
+            margin: 6px 0 4px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+        }
+
+        .login-card .subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 18px;
+        }
+
+        .login-card label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .login-card input,
+        .login-card select {
+            /*  width: 100%; */
+            padding: 10px 12px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            box-sizing: border-box;
+            font-size: 0.95rem;
+            color: var(--text);
+        }
+
+        .login-card input:focus,
+        .login-card select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 6px 18px rgba(242, 112, 36, 0.08);
+        }
+
+        .btn-google {
+            background: linear-gradient(90deg, #ff3b7a 0%, #ff5a9b 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-weight: 700;
+            width: 100%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 8px 24px rgba(255, 59, 122, 0.12);
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 18px 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .divider span {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            padding: 0 8px;
+        }
+
+        /* Remember row: keep checkbox and label on one line */
+        .remember-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            justify-content: flex-start;
+        }
+
+        .remember-row label {
+            margin: 0;
+            white-space: nowrap;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+        }
+
+        .login-error {
+            color: #fca5a5;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        /* Dashboard */
+        .dashboard-wrap {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 24px 20px;
+        }
+
+        .dash-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-lg);
+            backdrop-filter: blur(12px);
+        }
+
+        .dash-header h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #fff;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .dash-subtitle {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 2px;
+        }
+
+        .btn-logout {
+            background: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 8px 16px;
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: var(--font-main);
+            transition: all var(--transition);
+        }
+
+        .btn-logout:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem 1.5rem;
+            backdrop-filter: blur(12px);
+            transition: all var(--transition);
+        }
+
+        .stat-card:hover {
+            background: rgba(255, 255, 255, 0.09);
+            transform: translateY(-2px);
+        }
+
+        .stat-card .stat-icon {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 1.85rem;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #a5b4fc, #c4b5fd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-card .label {
+            font-size: 0.82rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 4px;
+        }
+
+        /* Sections */
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 16px;
+            backdrop-filter: blur(12px);
+        }
+
+        .section h3 {
+            margin: 0 0 1rem;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.85);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            padding: 9px 12px;
+            text-align: left;
+            font-size: 0.85rem;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 600;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        td {
+            color: rgba(255, 255, 255, 0.8);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        /* Bar charts for country */
+        .bar-wrap {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 999px;
+            height: 8px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+
+        .bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+            border-radius: 999px;
+            min-width: 2px;
+            transition: width 0.6s ease;
+        }
+
+        .country-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.82rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 2px;
+        }
+
+        /* Storage items */
+        .storage-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .storage-item:last-child {
+            border-bottom: none;
+        }
+
+        .storage-item .name {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.75);
+            font-weight: 500;
+        }
+
+        .storage-item .size {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.45);
+        }
+
+        /* Delete zone */
+        .delete-zone {
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: var(--radius);
+            padding: 1rem;
+            margin-bottom: 10px;
+        }
+
+        .delete-zone h4 {
+            margin: 0 0 0.4rem;
+            font-size: 0.88rem;
+            color: #fca5a5;
+            font-weight: 700;
+        }
+
+        .delete-zone p {
+            margin: 0 0 0.6rem;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.45);
+        }
+
+        .delete-zone .row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .delete-zone input[type="number"],
+        .delete-zone select {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            font-size: 0.85rem;
+            padding: 7px 10px;
+        }
+
+        .delete-zone select option {
+            background: #1e1b4b;
+            color: #fff;
+        }
+
+        .delete-zone span {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #fff;
+            border: none;
+            padding: 7px 14px;
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            font-size: 0.83rem;
+            font-weight: 600;
+            font-family: var(--font-main);
+            transition: all var(--transition);
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .btn-danger:disabled {
+            background: linear-gradient(135deg, #64748b, #475569);
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<div id="loginView" class="login-page">
+    <div class="login-card">
+        <img src="images/logo.png" alt="FPT Logo" class="center-logo">
+        <div class="subtitle">Please select your campus to sign in</div>
+        <form id="loginForm">
+            <div style="margin: 12px 0 14px;">
+                <label for="siteSelect">Chọn cơ sở</label>
+                <select id="siteSelect">
+                    <option value="">Chọn cơ sở</option>
+                </select>
+            </div>
+
+            <div class="remember-row">
+                <input type="checkbox" id="remember">
+                <label for="remember">Tự động đăng nhập</label>
+            </div>
+
+            <div class="divider"><span>SOCIAL</span></div>
+
+            <button type="button" class="btn-google" onclick="loginWithGoogle()">
+                <span style="display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; background:#fff; color:#ff3b7a; font-weight:800;">G</span>
+                Google
+            </button>
+        </form>
+    </div>
+</div>
+
+<div id="dashboardView" class="hidden" style="min-height:100vh;">
+    <div class="dashboard-wrap">
+        <div class="dash-header">
+            <div>
+                <h1>📊 Admin Dashboard</h1>
+                <div class="dash-subtitle">Quizzes.io.vn — System overview</div>
+            </div>
+            <button type="button" class="btn-logout" id="btnLogout">Sign Out</button>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">👁️</div>
+                <div class="value" id="statTotalVisits">0</div>
+                <div class="label">Total Visits</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📝</div>
+                <div class="value" id="statQuizCount">0</div>
+                <div class="label">Quizzes Created</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">💾</div>
+                <div class="value" id="statStorageMB">0</div>
+                <div class="label">Storage Used (MB)</div>
+            </div>
+        </div>
+
+        <!-- Visits by day -->
+        <div class="section">
+            <h3>📅 Daily Visits (Last 30 days)</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Visits</th>
+                        </tr>
+                    </thead>
+                    <tbody id="visitsByDayBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- By country -->
+        <div class="section">
+            <h3>🌍 Visits by Country</h3>
+            <div id="visitsByCountry"></div>
+        </div>
+
+        <!-- Storage detail -->
+        <div class="section">
+            <h3>💿 Storage Breakdown</h3>
+            <div id="storageDetail"></div>
+        </div>
+
+        <!-- Danger zone -->
+        <div class="section">
+            <h3>🗑️ Data Management</h3>
+            <p style="font-size:0.83rem; color:rgba(255,255,255,0.4); margin:0 0 1rem;">Safely delete unused data to
+                free up storage. System functionality will not be affected.</p>
+
+            <div class="delete-zone">
+                <h4>1. Delete Old Visit Logs</h4>
+                <p>Remove visit records older than N days (default: 90).</p>
+                <div class="row">
+                    <input type="number" id="deleteVisitsDays" value="90" min="7" max="365" style="width:80px;">
+                    <span>days</span>
+                    <button type="button" class="btn-danger" id="btnDeleteOldVisits">Delete</button>
+                </div>
+            </div>
+
+            <div class="delete-zone">
+                <h4>2. Delete Orphan Upload Files</h4>
+                <p>Remove files in /uploads that are no longer referenced by any quiz.</p>
+                <div class="row">
+                    <button type="button" class="btn-danger" id="btnDeleteOrphanFiles">Delete Orphans</button>
+                </div>
+            </div>
+
+            <div class="delete-zone">
+                <h4>3. Delete Old Submissions for a Quiz</h4>
+                <p>Remove submissions older than N days for a selected quiz.</p>
+                <div class="row">
+                    <select id="deleteSubmissionsQuizId">
+                        <option value="">-- Select quiz --</option>
+                    </select>
+                    <input type="number" id="deleteSubmissionsDays" value="365" min="30" max="730" style="width:80px;">
+                    <span>days</span>
+                    <button type="button" class="btn-danger" id="btnDeleteSubmissions">Delete Submissions</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+</html>

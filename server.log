@@ -1,0 +1,5 @@
+nohup: ignoring input
+Static directory: /home/debian/quiz/quizzes/public
+Server running on http://localhost:3000
+[Cleanup] Service started. Checking every 60 mins for files older than 6 hours.
+Connected to MongoDB

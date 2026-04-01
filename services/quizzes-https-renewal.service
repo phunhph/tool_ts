@@ -1,0 +1,14 @@
+[Unit]
+Description=HTTPS Certificate Renewal Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/home/debian/quiz/quizzes/services/https_renewal.sh
+Restart=on-failure
+RestartSec=30
+User=root
+# We run as root because certbot usually needs root permissions to access keys and bind ports (if standalone)
+
+[Install]
+WantedBy=multi-user.target

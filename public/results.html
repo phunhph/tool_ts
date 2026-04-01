@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="View your quiz results and performance analytics.">
+    <meta name="keywords"
+        content="quiz results, score report, student analytics, performance tracking, exam outcome, export quiz results">
+    <title>Quiz Results</title>
+    <link rel="stylesheet" href="style.css?v=2.0">
+    <link rel="canonical" href="https://poly.quizzes.io.vn/results.html">
+    <meta name="robots" content="noindex, follow">
+    <meta property="og:title" content="Quiz Results - Quizzes.io.vn">
+    <meta property="og:description" content="View your quiz results and performance analytics.">
+    <meta property="og:url" content="https://poly.quizzes.io.vn/results.html">
+    <meta property="og:type" content="website">
+    <link rel="icon" type="image/x-icon" href="favicon.svg" type="image/svg+xml">
+</head>
+
+<body>
+
+    <style>
+        /* Use only white + orange theme on this page */
+        body {
+            background: #ffffff;
+            min-height: 100vh;
+            color: var(--text);
+        }
+
+        /* Page header */
+        .results-page-header {
+            background: linear-gradient(135deg, #F27024 0%, #FB923C 100%);
+            color: #fff;
+            padding: 2rem 20px 3rem;
+            text-align: center;
+        }
+
+        .results-page-header h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin: 0 0 0.25rem;
+            letter-spacing: -0.3px;
+        }
+
+        .results-page-header p {
+            margin: 0;
+            opacity: 0.85;
+            font-size: 0.9rem;
+        }
+
+        /* Controls bar */
+        .controls-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 1.25rem;
+        }
+
+        /* Table */
+        .table-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: auto;
+            margin-top: 0.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            z-index: 10;
+        }
+
+        th {
+            /* Make table header orange with white text to fit white/orange-only theme */
+            background: var(--primary);
+            color: var(--text-on-primary);
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 12px 14px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 11px 14px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.88rem;
+            color: var(--text);
+            vertical-align: middle;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        tbody tr:hover td {
+            background: rgba(242, 112, 36, 0.05);
+        }
+
+        tbody tr:nth-child(even) td {
+            background: var(--bg-muted);
+        }
+
+        tbody tr:nth-child(even):hover td {
+            background: rgba(99, 102, 241, 0.06);
+        }
+
+        /* Score badge */
+        .score-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.82rem;
+        }
+
+        .score-high {
+            background: rgba(16, 185, 129, 0.12);
+            color: #047857;
+        }
+
+        .score-mid {
+            background: rgba(245, 158, 11, 0.15);
+            color: #92400e;
+        }
+
+        .score-low {
+            background: rgba(239, 68, 68, 0.12);
+            color: #991b1b;
+        }
+
+        /* Duplicate warning row */
+        .dup-row td {
+            background: rgba(239, 68, 68, 0.05) !important;
+        }
+
+        .dup-icon {
+            color: var(--error);
+            font-size: 0.85rem;
+        }
+
+        /* Details Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 9000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-card .logo-mark {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin: 0 auto 1.25rem;
+            box-shadow: 0 8px 24px rgba(242, 112, 36, 0.3);
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            margin: 5% auto;
+            padding: 2rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            width: 90%;
+            max-width: 800px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            animation: modalIn 0.25s ease-out;
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.96) translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .close {
+            float: right;
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            line-height: 1;
+            padding: 4px;
+            border-radius: var(--radius-sm);
+            transition: all var(--transition);
+        }
+
+        .close:hover {
+            background: var(--border);
+            color: var(--text);
+        }
+
+        .detail-item {
+            border-bottom: 1px solid var(--border);
+            padding: 12px 0;
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Password Modal */
+        #passwordModal .modal-content {
+            max-width: 420px;
+            text-align: center;
+        }
+
+        #passwordModal input {
+            margin: 12px 0;
+        }
+        /* Make the submit button visible on white modal background */
+        #passwordModal .btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%) !important;
+            color: var(--text-on-primary) !important;
+            padding: 10px 28px !important;
+            border-radius: var(--radius-full) !important;
+            display: block !important;
+            margin: 12px auto 0 !important;
+            box-shadow: var(--shadow-primary) !important;
+        }
+    </style>
+    </head>
+
+    <body>
+        <header class="site-header">
+            <div class="container">
+                <div class="logo-container">
+                    <a href="index.html">
+                        <img src="images/logo.png" alt="FPT Logo" class="logo-img">
+                        <!-- <div class="logo-fpt">
+                        <span class="orange">F</span><span class="black">P</span><span class="orange">T</span>
+                        <span
+                            style="font-size: 1.1rem; margin-left: 4px; font-weight: 600; color: var(--secondary); vertical-align: middle;">Quiz</span>
+                    </div> -->
+                    </a>
+                </div>
+                <nav>
+                    <ul class="site-menu">
+                        <li><a href="create.html">Create Quizzes</a></li>
+                        <li><a href="assessment-list.html" data-i18n="nav_assessment">Giải mã ngành học</a></li>
+                        <li><a href="index.html">Home</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Page header -->
+        <div class="results-page-header">
+            <h1 id="quizTitle" data-i18n="results_title">📊 Quiz Results</h1>
+            <p>View all student submissions and performance data</p>
+        </div>
+
+    <div class="container" style="max-width: 1200px; padding: 0; padding-top: 1.5rem;">
+            <div id="controls" class="hidden controls-bar">
+                <button id="exportBtn" class="btn btn-success" data-i18n="btn_export">📥 Export to Excel</button>
+                <button id="deleteBtn" class="btn btn-danger" data-i18n="btn_delete">🗑 Delete Quiz</button>
+            </div>
+
+            <div id="loading" style="text-align:center; padding:2rem; color:var(--text-muted);"
+                data-i18n="msg_loading_results">⏳ Loading results...</div>
+            <div id="resultsContent" class="hidden">
+                <div class="table-card">
+                    <table id="resultsTable">
+                        <thead>
+                            <tr>
+                                <th data-i18n="th_stt">#</th>
+                                <th data-i18n="th_name">Student Name</th>
+                                <th data-i18n="th_code">Code</th>
+                                <th data-i18n="th_email">Email</th>
+                                <th>Device ID</th>
+                                <th data-i18n="th_score">Score</th>
+                                <th data-i18n="th_time">Submitted At</th>
+                                <th data-i18n="th_action">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <p id="noResults" class="hidden" style="text-align:center; color:var(--text-muted); padding:2rem;"
+                    data-i18n="msg_no_results">No submissions yet.</p>
+            </div>
+            <div style="margin-top:1.5rem; text-align:center;">
+                <a href="index.html" style="color:var(--primary); font-size:0.9rem; text-decoration:none;"
+                    data-i18n="link_back_home">← Back to Home</a>
+            </div>
+        </div>
+
+        <!-- Details Modal -->
+        <div id="detailModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal()">&times;</span>
+                <h2 data-i18n="modal_details_title">Submission Details</h2>
+                <div id="modalBody"></div>
+            </div>
+        </div>
+
+        <!-- Password Modal -->
+        <div id="passwordModal" class="modal">
+            <div class="modal-content" style="max-width: 400px; text-align: center;">
+                <h2 data-i18n="modal_password_title">Password Protected</h2>
+                <p data-i18n="msg_enter_password">Please enter the password to view results.</p>
+                <input type="password" id="resultPassword" placeholder="Enter password"
+                    style="width: 100%; padding: 10px; margin: 15px 0; border: 1px solid #ddd; border-radius: 5px;">
+                <button class="btn" onclick="submitPassword()" data-i18n="btn_confirm">Submit</button>
+                <p id="passwordError" style="color: red; display: none; margin-top: 10px;"
+                    data-i18n="msg_incorrect_password">Incorrect password</p>
+            </div>
+        </div>
+
+        <footer class="site-footer">
+            <p data-i18n="footer_text">© 2019 - 2026 FPT Hà Nội. 2026 . All rights reserved. | <a
+                    href="privacy.html">Privacy</a> |
+                <a href="policy.html">Policy</a>
+            </p>
+        </footer>
+
+        
+
+        
+
+    <script src="js/translations.js?v=1.1"></script>
+<script>
+        let currentQuizData = null;
+        let currentResults = [];
+        let quizPassword = '';
+
+        async function loadResults() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const quizId = urlParams.get('id');
+
+            if (!quizId) {
+                document.getElementById('loading').innerText = 'No Quiz ID provided.';
+                return;
+            }
+
+            // Export Button Handler
+            document.getElementById('exportBtn').onclick = () => {
+                let url = `/api/export-results/${quizId}`;
+                if (quizPassword) {
+                    url += `?password=${encodeURIComponent(quizPassword)}`;
+                }
+                window.location.href = url;
+            };
+
+            // Delete Button Handler
+            document.getElementById('deleteBtn').onclick = deleteQuiz;
+
+            try {
+                // Get Quiz Details
+                const quizResp = await fetch(`/api/quiz/${quizId}`);
+                if (quizResp.ok) {
+                    currentQuizData = await quizResp.json();
+                    document.getElementById('quizTitle').innerText = `Results: ${currentQuizData.title || currentQuizData.filename}`;
+                }
+
+                // Get Results
+                let resultsUrl = `/api/results/${quizId}`;
+                if (quizPassword) {
+                    resultsUrl += `?password=${encodeURIComponent(quizPassword)}`;
+                }
+
+                const resultsResp = await fetch(resultsUrl);
+
+                if (resultsResp.status === 401) {
+                    document.getElementById('loading').classList.add('hidden');
+                    document.getElementById('passwordModal').style.display = 'block';
+                    if (quizPassword) {
+                        document.getElementById('passwordError').style.display = 'block';
+                    }
+                    return;
+                }
+
+                if (!resultsResp.ok) {
+                    throw new Error('Failed to load results');
+                }
+
+                currentResults = await resultsResp.json();
+
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('resultsContent').classList.remove('hidden');
+                document.getElementById('controls').classList.remove('hidden');
+                document.getElementById('passwordModal').style.display = 'none'; // Ensure closed if successful
+
+                if (currentResults.length === 0) {
+                    document.getElementById('noResults').classList.remove('hidden');
+                    document.getElementById('resultsTable').classList.add('hidden');
+                } else {
+                    const tbody = document.querySelector('#resultsTable tbody');
+                    tbody.innerHTML = '';
+
+                    // Count MAC occurrences to detect duplicates
+                    const macCounts = {};
+                    currentResults.forEach(sub => {
+                        const mac = sub.macAddress || '';
+                        if (mac && mac !== 'unknown') {
+                            macCounts[mac] = (macCounts[mac] || 0) + 1;
+                        }
+                    });
+
+                    currentResults.forEach((sub, index) => {
+                        const tr = document.createElement('tr');
+                        const date = new Date(sub.submittedAt).toLocaleString();
+                        const mac = sub.macAddress || '';
+
+                        // Highlight if mac is a duplicate
+                        const isDuplicate = mac && mac !== 'unknown' && macCounts[mac] > 1;
+                        if (isDuplicate) {
+                            tr.style.backgroundColor = '#ffe6e6'; // Light red background
+                            tr.title = 'Warning: Multiple submissions detected from the same device (Simulator MAC match).';
+                        }
+
+                        tr.innerHTML = `
+                            <td>${index + 1}</td>
+                            <td>${sub.studentName}</td>
+                            <td>${sub.studentCode || ''}</td>
+                            <td>${sub.studentEmail || ''}</td>
+                            <td style="${isDuplicate ? 'color: #c0392b; font-weight: bold;' : ''}">${mac || 'N/A'}</td>
+                            <td>${sub.score} / ${sub.total}</td>
+                            <td>${date}</td>
+                            <td><button class="btn btn-secondary" style="padding: 5px 10px; font-size: 0.9rem;" onclick="showDetails(${index})">Details</button></td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+
+            } catch (error) {
+                console.error(error);
+                document.getElementById('loading').innerText = 'Error loading results.';
+            }
+        }
+
+        function submitPassword() {
+            const pwdStart = document.getElementById('resultPassword').value;
+            if (!pwdStart) return;
+            quizPassword = pwdStart;
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('loading').innerText = 'Checking password...';
+            document.getElementById('passwordModal').style.display = 'none';
+            document.getElementById('passwordError').style.display = 'none';
+            loadResults();
+        }
+
+        async function deleteQuiz() {
+            const confirmed = confirm("Are you sure you want to delete this quiz completely? This action cannot be undone.\n\nNote: If the quiz has a password, it will be used from your current session.");
+            if (!confirmed) return;
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const quizId = urlParams.get('id');
+
+            // If password was required to view, it stays in quizPassword. 
+            // If not required to view (no password set), quizPassword is empty.
+            // But if user wants to delete, and password exists, it must be sent.
+
+            try {
+                const response = await fetch(`/api/quiz/${quizId}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: quizPassword })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('Quiz deleted successfully.');
+                    window.location.href = 'index.html';
+                } else {
+                    alert('Error deleting quiz: ' + data.error);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('An error occurred while deleting the quiz.');
+            }
+        }
+
+        function showDetails(index) {
+            try {
+                const sub = currentResults[index];
+                if (!sub) {
+                    alert('Error: Submission not found for this row.');
+                    return;
+                }
+                const modalBody = document.getElementById('modalBody');
+
+                let html = `<h3>${sub.studentName} - Score: ${sub.score}/${sub.total}</h3>`;
+
+                if (currentQuizData && currentQuizData.questions) {
+                    const breakdown = {};
+                    currentQuizData.questions.forEach((q, i) => {
+                        let studentAnswer = (sub.answers && sub.answers[i] !== undefined) ? sub.answers[i] : 'No Answer';
+                        const studentAnswerStr = String(studentAnswer).trim();
+                        const correctAnswerStr = String(q.correctAnswer).trim();
+                        const isCorrect = studentAnswerStr === correctAnswerStr;
+
+                        const skill = q.skillType || 'General';
+                        const segment = q.segmentName || 'General';
+                        const key = `${segment}_${skill}`;
+
+                        if (!breakdown[key]) {
+                            breakdown[key] = { total: 0, correct: 0, segmentName: segment, skillType: skill };
+                        }
+                        breakdown[key].total++;
+                        if (isCorrect) breakdown[key].correct++;
+                    });
+
+                    html += `<div style="margin: 15px 0; padding: 15px; background: #f9f9f9; border-radius: 8px;">
+                        <h4 style="margin-top: 0; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 5px;">Thống kê chi tiết từng phần / kỹ năng:</h4>
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em;">
+                            <thead>
+                                <tr style="background: #3498db; color: #fff;">
+                                    <th style="padding: 8px; border: 1px solid #ddd;">Phần (Segment)</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd;">Kỹ năng (Skill)</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Số câu đúng</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Tỷ lệ (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+                    for (const key in breakdown) {
+                        const b = breakdown[key];
+                        const pct = b.total > 0 ? Math.round((b.correct / b.total) * 100) : 0;
+                        let color = pct >= 80 ? 'green' : (pct >= 50 ? 'orange' : 'red');
+                        html += `
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd;">${b.segmentName}</td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">${b.skillType}</td>
+                                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${b.correct} / ${b.total}</td>
+                                <td style="padding: 8px; border: 1px solid #ddd; text-align: center; color: ${color}; font-weight: bold;">${pct}%</td>
+                            </tr>
+                        `;
+                    }
+                    html += `</tbody></table></div>`;
+
+                    html += `<h4 style="margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">Chi tiết từng câu hỏi:</h4>`;
+
+                    currentQuizData.questions.forEach((q, i) => {
+                        let studentAnswer = (sub.answers && sub.answers[i] !== undefined) ? sub.answers[i] : 'No Answer';
+
+                        // Handle numeric and string comparison safely
+                        const studentAnswerStr = String(studentAnswer).trim();
+                        const correctAnswerStr = String(q.correctAnswer).trim();
+
+                        const isCorrect = studentAnswerStr === correctAnswerStr;
+                        const color = isCorrect ? 'green' : 'red';
+
+                        html += `
+                            <div class="detail-item">
+                                <p><strong>Q${i + 1}: ${q.question}</strong></p>
+                                <p>Student Answer: <span style="color: ${color}; font-weight: bold;">${studentAnswer}</span></p>
+                                <p style="color: #666; font-size: 0.9em;">Correct Answer: ${q.correctAnswer}</p>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += '<p>Quiz question data not available.</p>';
+                }
+
+                modalBody.innerHTML = html;
+                document.getElementById('detailModal').style.display = 'block';
+            } catch (e) {
+                console.error(e);
+                alert('Error showing details: ' + e.message);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('detailModal').style.display = 'none';
+        }
+
+        window.onclick = function (event) {
+            const modal = document.getElementById('detailModal');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        window.onload = loadResults;
+    </script>
+</body>
+
+</html>

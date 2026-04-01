@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Career Dashboard - Phú Dev</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #64748b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg-body: #f1f5f9;
+            --white: #ffffff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body);
+            color: #1e293b;
+            line-height: 1.6;
+            padding: 15px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 380px; /* PC: 2 cột */
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+        }
+
+        /* Responsive: Dưới 992px chuyển thành 1 cột */
+        @media (max-width: 992px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Section ngành cao nhất */
+        .top-major-card {
+            grid-column: 1 / -1; /* Luôn chiếm full chiều ngang trên cùng */
+            border-left: 10px solid var(--primary);
+            animation: fadeInLeft 0.8s ease;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            background: #dbeafe;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .major-name {
+            font-size: clamp(1.5rem, 5vw, 2.2rem); /* Font chữ tự co giãn */
+            color: #0f172a;
+            margin-bottom: 15px;
+        }
+
+        /* Phân tích lợi hại (Responsive Grid) */
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .analysis-item {
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+        }
+
+        .pros { background: #f0fdf4; border: 1px solid #bbf7d0; }
+        .cons { background: #fef2f2; border: 1px solid #fecaca; }
+        .market { background: #fffbeb; border: 1px solid #fef3c7; }
+
+        /* Biểu đồ quạt */
+        .chart-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            animation: fadeInRight 0.8s ease;
+        }
+        .retry-ai-inline {
+            margin-top: 12px;
+            display: inline-block;
+            padding: 10px 14px;
+            border: 0;
+            border-radius: 10px;
+            background: var(--warning);
+            color: #111827;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        /* Kỹ năng */
+        .skills-box {
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .skill-row {
+            margin-bottom: 15px;
+        }
+
+        .skill-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .progress-bg {
+            height: 10px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #60a5fa);
+            border-radius: 10px;
+            width: 0;
+            transition: width 1.5s ease-in-out;
+        }
+
+        /* Animations */
+        @keyframes fadeInLeft { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes fadeInRight { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Phân Tích Hướng Nghiệp</h1>
+        <p>Kết quả dựa trên logic thuật toán và xu hướng thị trường 2026</p>
+    </header>
+
+    <div class="card" id="studentCard" style="margin-bottom: 20px; display:none;">
+        <h3 style="margin-bottom: 10px;">Thông tin thí sinh</h3>
+        <div id="studentInfo" style="color: var(--secondary); font-size: 0.95rem;"></div>
+    </div>
+
+    <div class="card" id="attemptListCard" style="margin-bottom: 20px; display:none;">
+        <h3 style="margin-bottom: 12px;">Danh sách thí sinh</h3>
+        <div style="color: var(--secondary); font-size: 0.92rem; margin-bottom: 12px;">
+            Nhấn vào một dòng để xem chi tiết 1 bài.
+        </div>
+        <div id="attemptListError" style="display:none; margin-bottom: 12px; padding: 10px 12px; background:#fef2f2; color:#991b1b; border:1px solid #fecaca; border-radius:10px;">
+            Không tải được dữ liệu. Vui lòng thử lại.
+        </div>
+        <div style="display:flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
+            <button id="exportAttemptsBtn" style="padding: 10px 14px; border: 0; border-radius: 10px; background: var(--primary); color: #fff; font-weight: 700; cursor: pointer;">
+                Đồng bộ Google Sheets
+            </button>
+            <button id="retryAttemptsBtn" style="display:none; padding: 10px 14px; border: 0; border-radius: 10px; background: var(--warning); color: #111827; font-weight: 700; cursor: pointer;">
+                Thử lại
+            </button>
+        </div>
+        <div style="overflow:auto;">
+            <table id="attemptTable" style="width:100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Họ và tên</th>
+                        <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Số điện thoại</th>
+                        <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Email</th>
+                        <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Ngành gợi ý</th>
+                        <th id="retryAiColTh" style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb; display:none;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="card top-major-card" id="mainResult">
+            <span class="badge">NGÀNH GỢI Ý ƯU TIÊN</span>
+            <h2 class="major-name" id="majorName">Đang xử lý...</h2>
+            <p id="summaryText" style="color: var(--secondary); margin-bottom: 20px;"></p>
+            
+            <div class="analysis-grid">
+                <div class="analysis-item pros">
+                    <strong>✅ Ưu điểm & Tố chất:</strong>
+                    <ul id="prosList" style="margin-left: 20px; margin-top: 5px;"></ul>
+                </div>
+                <div class="analysis-item cons">
+                    <strong>⚠️ Thách thức:</strong>
+                    <ul id="consList" style="margin-left: 20px; margin-top: 5px;"></ul>
+                </div>
+                <div class="analysis-item market">
+                    <strong>🚀 Thị trường (2026-2030):</strong>
+                    <p id="marketText" style="margin-top: 5px;"></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card chart-box">
+            <h3>Tỷ lệ phù hợp</h3>
+            <div class="chart-container">
+                <canvas id="careerPieChart"></canvas>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--secondary); margin-top: 15px;">
+                Biểu đồ thể hiện độ tương thích của bạn với các nhóm ngành top đầu.
+            </p>
+        </div>
+
+        <div class="card skills-box">
+            <h3>Chỉ số năng lực cốt lõi</h3>
+            <div id="skillsContainer" style="margin-top: 20px;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let lastAttemptListItems = [];
+    let currentAttemptId = '';
+
+    function esc(s) {
+        return String(s ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+    }
+
+    function toCsvCell(v) {
+        const s = String(v ?? '');
+        const escaped = s.replace(/"/g, '""');
+        return `"${escaped}"`;
+    }
+
+    function downloadCsv(filename, rows) {
+        const csv = rows.map(r => r.map(toCsvCell).join(',')).join('\r\n');
+        const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' }); // BOM for Excel/Sheets UTF-8
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    }
+
+    function initDashboard(data) {
+        const top = data.suggestedMajors[0];
+
+        // Render Text
+        document.getElementById('majorName').innerText = top.majorName;
+        document.getElementById('summaryText').innerText = data.explanationSummary;
+        document.getElementById('marketText').innerText = data.trendSignals.marketNote;
+        const summaryEl = document.getElementById('summaryText');
+        const isAiFallback = String(data.explanationSummary || '').toLowerCase().includes('lỗi kết nối gemini api');
+        const analysisGridEl = document.querySelector('#mainResult .analysis-grid');
+        if (analysisGridEl) {
+            analysisGridEl.style.display = isAiFallback ? 'none' : 'grid';
+        }
+        if (isAiFallback && currentAttemptId) {
+            const btn = document.createElement('button');
+            btn.className = 'retry-ai-inline';
+            btn.textContent = 'Thử lại AI';
+            btn.onclick = async () => {
+                const oldText = btn.textContent;
+                btn.disabled = true;
+                btn.textContent = 'Đang thử lại...';
+                try {
+                    const resp = await fetch(`/api/assessments/attempts/${encodeURIComponent(currentAttemptId)}/retry-ai`, {
+                        method: 'POST'
+                    });
+                    const payload = await resp.json().catch(() => ({}));
+                    if (!resp.ok || !payload.success) throw new Error(payload?.error || 'Retry failed');
+                    window.location.reload();
+                } catch (e) {
+                    console.error(e);
+                    alert(`Thử lại AI thất bại: ${e.message || 'Unknown error'}`);
+                    btn.disabled = false;
+                    btn.textContent = oldText;
+                }
+            };
+            summaryEl.insertAdjacentElement('afterend', btn);
+        }
+
+        // Render Lists
+        const prosUl = document.getElementById('prosList');
+        data.trendSignals.strengths.forEach(s => prosUl.innerHTML += `<li>${s}</li>`);
+        
+        const consUl = document.getElementById('consList');
+        data.trendSignals.risks.forEach(r => consUl.innerHTML += `<li>${r}</li>`);
+
+        // Render Skills
+        const skillsDiv = document.getElementById('skillsContainer');
+        const labelMap = {
+            leadership: 'Lãnh đạo',
+            teamwork: 'Làm việc nhóm',
+            communication: 'Giao tiếp',
+            logical: 'Tư duy logic',
+            analysis: 'Tư duy phân tích',
+            creativity: 'Sáng tạo',
+            detail: 'Tỉ mỉ / Kỷ luật',
+            language: 'Ngoại ngữ',
+            general: 'Năng lực chung'
+        };
+        const entries = Object.entries(data.derivedSkillScores || {})
+            .map(([k, v]) => [k, Number(v)])
+            .filter(([, v]) => Number.isFinite(v))
+            .sort((a, b) => b[1] - a[1]);
+
+        entries.forEach(([key, val]) => {
+            const name = labelMap[String(key || '').toLowerCase()] || key;
+            skillsDiv.innerHTML += `
+                <div class="skill-row">
+                    <div class="skill-info"><span>${name}</span><span>${val}%</span></div>
+                    <div class="progress-bg"><div class="progress-fill" style="width: ${val}%"></div></div>
+                </div>
+            `;
+        });
+
+        // Chart.js - Doughnut Chart (Hình quạt/vòng cung)
+        const ctx = document.getElementById('careerPieChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.suggestedMajors.map(m => m.majorName),
+                datasets: [{
+                    data: data.suggestedMajors.map(m => m.score),
+                    backgroundColor: ['#2563eb', '#60a5fa', '#94a3b8'],
+                    borderWidth: 0,
+                    hoverOffset: 15
+                }]
+            },
+            options: {
+                cutout: '70%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, padding: 15 } }
+                }
+            }
+        });
+    }
+
+    async function loadFromAttempt() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const attemptId = urlParams.get('attemptId');
+        if (!attemptId) return null;
+        currentAttemptId = attemptId;
+
+        const resp = await fetch(`/api/assessments/attempts/${encodeURIComponent(attemptId)}`);
+        const payload = await resp.json();
+        if (!resp.ok) throw new Error(payload?.error || 'Failed to load attempt');
+
+        const attempt = payload.attempt || {};
+        const result = payload.result || {};
+
+        // Student card
+        const card = document.getElementById('studentCard');
+        const box = document.getElementById('studentInfo');
+        box.innerHTML = `
+            <div><strong>Họ tên:</strong> ${esc(attempt.studentName)}</div>
+            <div><strong>Số điện thoại:</strong> ${esc(attempt.studentPhone || '')}</div>
+            <div><strong>Email:</strong> ${esc(attempt.studentEmail)}</div>
+        `;
+        card.style.display = 'block';
+
+        return {
+            suggestedMajors: result.suggestedMajors || [],
+            explanationSummary: result.explanationSummary || '',
+            trendSignals: result.trendSignals || { strengths: [], risks: [], marketNote: '' },
+            derivedSkillScores: result.derivedSkillScores || {}
+        };
+    }
+
+    async function loadAttemptList() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const quizId = urlParams.get('quizId') || urlParams.get('id');
+        const email = urlParams.get('email');
+        const qs = new URLSearchParams();
+        if (quizId) qs.set('quizId', quizId);
+        if (email) qs.set('email', email);
+        qs.set('limit', '200');
+        const url = quizId
+            ? `/api/assessments/attempts?${qs.toString()}`
+            : `/api/assessments/attempts?${qs.toString()}`;
+        const resp = await fetch(url);
+        const payload = await resp.json();
+        if (!resp.ok) throw new Error(payload?.error || 'Failed to load attempts');
+        return payload?.items || [];
+    }
+
+    function renderAttemptList(items) {
+        const card = document.getElementById('attemptListCard');
+        const table = document.getElementById('attemptTable');
+        const tbody = table.querySelector('tbody');
+        const retryColTh = document.getElementById('retryAiColTh');
+        const retryBtn = document.getElementById('retryAttemptsBtn');
+        const errBox = document.getElementById('attemptListError');
+        tbody.innerHTML = '';
+        lastAttemptListItems = Array.isArray(items) ? items : [];
+        const hasAnyAiError = lastAttemptListItems.some(it =>
+            String((it.topMajor && it.topMajor.majorName) || '').trim().toLowerCase() === 'lỗi ai'
+        );
+        if (retryColTh) retryColTh.style.display = hasAnyAiError ? '' : 'none';
+        if (retryBtn) retryBtn.style.display = 'none';
+        if (errBox) errBox.style.display = 'none';
+
+        if (!lastAttemptListItems.length) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td colspan="${hasAnyAiError ? 5 : 4}" style="padding: 14px; color: var(--secondary); border-bottom: 1px solid #f1f5f9;">
+                    Chưa có dữ liệu thí sinh.
+                </td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        lastAttemptListItems.forEach((it) => {
+            const tr = document.createElement('tr');
+            tr.style.cursor = 'pointer';
+            const topMajorName = String((it.topMajor && it.topMajor.majorName) || '').trim();
+            const isAiError = topMajorName.toLowerCase() === 'lỗi ai';
+            tr.innerHTML = `
+                <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${esc(it.studentName || '')}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${esc(it.studentPhone || '')}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${esc(it.studentEmail || '')}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${esc(topMajorName)}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; ${hasAnyAiError ? '' : 'display:none;'}">
+                    ${isAiError ? `<button class="retry-ai-btn" data-attempt-id="${esc(it.attemptId || '')}" style="padding:6px 10px; border:0; border-radius:8px; background:var(--warning); color:#111827; font-weight:700; cursor:pointer;">Thử lại AI</button>` : ''}
+                </td>
+            `;
+            tr.addEventListener('click', () => {
+                if (it.attemptId) {
+                    window.location.href = `assessment-result.html?attemptId=${encodeURIComponent(it.attemptId)}`;
+                }
+            });
+            tbody.appendChild(tr);
+        });
+
+        tbody.querySelectorAll('.retry-ai-btn').forEach((btn) => {
+            btn.addEventListener('click', async (ev) => {
+                ev.stopPropagation();
+                const attemptId = btn.getAttribute('data-attempt-id');
+                if (!attemptId) return;
+                const oldText = btn.textContent;
+                btn.disabled = true;
+                btn.textContent = 'Đang thử lại...';
+                try {
+                    const resp = await fetch(`/api/assessments/attempts/${encodeURIComponent(attemptId)}/retry-ai`, {
+                        method: 'POST'
+                    });
+                    const payload = await resp.json().catch(() => ({}));
+                    if (!resp.ok || !payload.success) throw new Error(payload?.error || 'Retry failed');
+                    const items = await loadAttemptList();
+                    renderAttemptList(items || []);
+                } catch (e) {
+                    console.error(e);
+                    alert(`Thử lại AI thất bại: ${e.message || 'Unknown error'}`);
+                    btn.disabled = false;
+                    btn.textContent = oldText;
+                }
+            });
+        });
+
+        card.style.display = 'block';
+
+        const exportBtn = document.getElementById('exportAttemptsBtn');
+        if (exportBtn) {
+            exportBtn.disabled = !lastAttemptListItems.length;
+            exportBtn.style.opacity = exportBtn.disabled ? '0.6' : '1';
+            exportBtn.style.cursor = exportBtn.disabled ? 'not-allowed' : 'pointer';
+            exportBtn.onclick = async () => {
+                if (!lastAttemptListItems.length) return;
+                const urlParams = new URLSearchParams(window.location.search);
+                const quizId = urlParams.get('quizId') || urlParams.get('id');
+                const email = urlParams.get('email');
+                const originalText = exportBtn.textContent;
+                exportBtn.disabled = true;
+                exportBtn.textContent = 'Đang đồng bộ...';
+                try {
+                    const resp = await fetch('/api/assessments/attempts-export-sheets', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ quizId, email, limit: 2000 })
+                    });
+                    const payload = await resp.json().catch(() => ({}));
+                    if (!resp.ok) throw new Error(payload?.detail || payload?.error || 'Sync failed');
+                    const tabName = payload?.tabName || 'today';
+                    const rows = Number(payload?.appendedRows || 0);
+                    alert(`Đã đồng bộ ${rows} dòng vào Google Sheets (tab ${tabName}).`);
+                } catch (e) {
+                    console.error(e);
+                    alert(`Đồng bộ Google Sheets thất bại: ${e.message || 'Unknown error'}`);
+                } finally {
+                    exportBtn.disabled = !lastAttemptListItems.length;
+                    exportBtn.textContent = originalText;
+                }
+            };
+        }
+    }
+
+    window.onload = async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const retryBtn = document.getElementById('retryAttemptsBtn');
+        const errBox = document.getElementById('attemptListError');
+        if (retryBtn) {
+            retryBtn.onclick = async () => {
+                try {
+                    const items = await loadAttemptList();
+                    renderAttemptList(items || []);
+                } catch (e) {
+                    console.error(e);
+                    if (errBox) errBox.style.display = 'block';
+                    retryBtn.style.display = 'inline-block';
+                }
+            };
+        }
+        try {
+            const attemptId = urlParams.get('attemptId');
+
+            if (attemptId) {
+                const live = await loadFromAttempt();
+                if (live) return initDashboard(live);
+            }
+
+            // If no attemptId -> show list (by quizId if provided, otherwise latest attempts)
+            if (!attemptId) {
+                const items = await loadAttemptList();
+                document.querySelector('.dashboard-grid').style.display = 'none';
+                renderAttemptList(items || []);
+                return;
+            }
+        } catch (e) {
+            console.error(e);
+            if (errBox) errBox.style.display = 'block';
+            if (retryBtn) retryBtn.style.display = 'inline-block';
+        }
+
+        // fallback (no attemptId)
+        document.querySelector('.dashboard-grid').style.display = 'none';
+        renderAttemptList([]);
+    };
+</script>
+
+</body>
+</html>

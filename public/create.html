@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Create your own quiz online easily by uploading an Excel file. Best tool for teachers and students.">
+    <meta name="keywords" content="create quiz, tạo quiz, online quiz maker, excel to quiz">
+    <title>Create Quiz</title>
+    <link rel="stylesheet" href="style.css?v=2.0">
+    <link rel="canonical" href="https://poly.quizzes.io.vn/create.html">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="Create Quiz - Quizzes.io.vn">
+    <meta property="og:description"
+        content="Create your own quiz online easily by uploading an Excel file. Best tool for teachers and students.">
+    <meta property="og:url" content="https://poly.quizzes.io.vn/create.html">
+    <meta property="og:type" content="website">
+    <link rel="icon" type="image/x-icon" href="favicon.svg" type="image/svg+xml">
+    <style>
+        /* ---- Page-specific styles ---- */
+        .page-hero {
+            background: linear-gradient(135deg, #F27024 0%, #FB923C 100%);
+            padding: 5rem 20px 6rem;
+            text-align: center;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .page-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Ccircle cx='30' cy='30' r='10'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .page-hero h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin: 0 0 0.5rem;
+            letter-spacing: -0.5px;
+            position: relative;
+        }
+
+        .page-hero p {
+            margin: 0 0 1.2rem;
+            font-size: 1rem;
+            opacity: 0.88;
+            position: relative;
+        }
+
+        .page-hero .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 999px;
+            padding: 5px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            backdrop-filter: blur(8px);
+            position: relative;
+        }
+
+        .form-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.75rem;
+            margin-bottom: 1.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Quiz Options (Number of Options) responsive */
+        .options-count-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 640px) {
+            .options-count-row {
+                flex-direction: column;
+                gap: 0.6rem;
+            }
+        }
+
+        .form-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 1.25rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .form-card-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .icon-primary {
+            background: rgba(99, 102, 241, 0.12);
+        }
+
+        .icon-warning {
+            background: rgba(245, 158, 11, 0.12);
+        }
+
+        .icon-success {
+            background: rgba(16, 185, 129, 0.12);
+        }
+
+        .icon-error {
+            background: rgba(239, 68, 68, 0.12);
+        }
+
+        .form-card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0;
+        }
+
+        .form-card-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin: 2px 0 0;
+            font-weight: 400;
+        }
+
+        /* File upload zone */
+
+        /* File upload zone */
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-lg);
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition);
+            background: var(--bg-muted);
+        }
+
+        .drop-zone:hover,
+        .drop-zone.over {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.04);
+        }
+
+        .drop-zone .dz-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .drop-zone .dz-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .drop-zone .dz-sub {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .drop-zone input[type="file"] {
+            display: none;
+        }
+
+        .dz-filename {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: var(--radius-full);
+            font-size: 0.83rem;
+            color: var(--primary-dark);
+            font-weight: 600;
+            margin-top: 10px;
+            justify-content: center;
+        }
+
+        .dz-filename.show {
+            display: flex;
+        }
+
+        /* Question bank item */
+        .bank-item {
+            background: var(--bg-card);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            position: relative;
+            transition: border-color var(--transition);
+        }
+
+        .bank-item:hover {
+            border-color: var(--primary-light);
+        }
+
+        .bank-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .bank-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-radius: 50%;
+        }
+
+        .bank-title-text {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-left: 10px;
+        }
+
+        /* Radio options */
+        .radio-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all var(--transition);
+            margin-bottom: 8px;
+        }
+
+        .radio-option:has(input:checked) {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.07);
+        }
+
+        .radio-option input[type="radio"] {
+            width: auto;
+            min-width: 16px;
+            height: 16px;
+            margin: 2px 0 0;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .radio-option-body {
+            flex: 1;
+        }
+
+        .radio-option-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .radio-option-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Security section */
+        .security-box {
+            background: linear-gradient(135deg, #fefbf3 0%, #fffbeb 100%);
+            border: 1.5px solid #fde68a;
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+        }
+
+        .security-box h4 {
+            margin: 0 0 0.75rem;
+            font-size: 0.95rem;
+            color: #92400e;
+        }
+
+        .security-box p {
+            margin: 0 0 0.5rem;
+            font-size: 0.82rem;
+            color: #78350f;
+        }
+
+        /* Checkbox style */
+        .check-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+            cursor: pointer;
+        }
+
+        .check-option input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            min-width: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .check-label-bold {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text);
+        }
+
+        .check-label-sub {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        /* Result success card */
+        .result-success-header {
+            text-align: center;
+            padding: 1.5rem 1rem;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-radius: var(--radius-lg);
+            border: 1.5px solid #86efac;
+            margin-bottom: 1.25rem;
+        }
+
+        .result-success-header .check-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin: 0 auto 0.75rem;
+        }
+
+        .result-success-header h3 {
+            margin: 0 0 0.25rem;
+            color: #065f46;
+            font-size: 1.1rem;
+        }
+
+        .result-success-header p {
+            margin: 0;
+            color: #047857;
+            font-size: 0.88rem;
+        }
+
+        .link-card {
+            background: var(--bg-muted);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            padding: 0.9rem 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .link-card-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+        }
+
+        .link-card-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .link-card-row input {
+            flex: 1;
+            font-size: 0.85rem;
+            border-radius: var(--radius);
+        }
+
+        .link-card-row .btn,
+        .link-card-row a.btn {
+            padding: 7px 14px;
+            font-size: 0.82rem;
+        }
+
+        /* History cards */
+        .history-grid .history-item {
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.75rem;
+            background: var(--bg-card);
+            transition: all var(--transition);
+        }
+
+        .history-grid .history-item:hover {
+            border-color: var(--primary-light);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .history-item-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.6rem;
+        }
+
+        .history-item-title {
+            font-weight: 700;
+            font-size: 0.92rem;
+            color: var(--text);
+            margin: 0 0 2px;
+        }
+
+        .history-item-meta {
+            font-size: 0.78rem;
+            color: var(--text-subtle);
+        }
+
+        .history-item-date {
+            font-size: 0.78rem;
+            color: var(--text-subtle);
+            white-space: nowrap;
+        }
+
+        .history-links {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .history-links a {
+            font-size: 0.83rem;
+            font-weight: 600;
+            text-decoration: none;
+            color: var(--primary);
+            padding: 4px 10px;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: var(--radius-full);
+            transition: all var(--transition);
+        }
+
+        .history-links a:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .history-links a.results-link {
+            color: var(--success);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .history-links a.results-link:hover {
+            background: rgba(16, 185, 129, 0.08);
+        }
+
+        .history-item-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 0.7rem;
+        }
+
+        /* IP info strip */
+        .ip-strip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.83rem;
+            color: var(--text-muted);
+            padding: 7px 12px;
+            background: var(--bg-muted);
+            border-radius: var(--radius);
+            margin-bottom: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .ip-strip strong {
+            color: var(--text);
+        }
+
+        .ip-copy-btn {
+            background: none;
+            border: none;
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 0;
+            font-family: var(--font-main);
+        }
+    </style>
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="container">
+            <div class="logo-container">
+                <a href="index.html">
+                    <img src="images/logo.png" alt="FPT Logo" class="logo-img">
+                    <!-- <div class="logo-fpt">
+                        <span class="orange">F</span><span class="black">P</span><span class="orange">T</span>
+                        <span
+                            style="font-size: 1.1rem; margin-left: 4px; font-weight: 600; color: var(--secondary); vertical-align: middle;">Quiz</span>
+                    </div> -->
+                </a>
+            </div>
+            <nav>
+                <ul class="site-menu">
+                    <li><a href="create.html" data-i18n="nav_create">Create Quizzes</a></li>
+                    <li><a href="assessment-list.html" data-i18n="nav_assessment">Giải mã ngành học</a></li>
+                    <li><a href="#" data-i18n="nav_blog">Blog</a></li>
+                    <li class="dropdown">
+                        <a href="#" data-i18n="nav_lang">Language ▾</a>
+                        <ul class="dropdown-content">
+                            <li><a href="#" onclick="setLanguage('en')">English</a></li>
+                            <li><a href="#" onclick="setLanguage('vi')">Tiếng Việt</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <div class="page-hero">
+        <div style="position:relative;">
+            <div style="font-size:2.8rem; margin-bottom: 12px;">✏️</div>
+            <h1 data-i18n="create_title">Create Your Quiz</h1>
+            <p>Upload your question bank Excel file and generate a shareable quiz in seconds.</p>
+            <a href="guide.html" target="_blank" class="hero-badge" data-i18n="create_guide_link">
+                📘 View Excel Guide (Vietnamese)
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+        <form id="uploadForm">
+
+            <style>
+                /* Two-column wrapper for top-level form cards */
+                .two-col-grid {
+                    display: grid;
+                    grid-template-columns: 1fr;
+                    gap: 1.25rem;
+                }
+
+                @media (min-width: 900px) {
+                    .two-col-grid {
+                        grid-template-columns: 1fr 1fr;
+                    }
+                }
+            </style>
+
+            <div class="two-col-grid">
+
+                <!-- Basic Info -->
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <div class="form-card-icon icon-primary">📝</div>
+                        <div>
+                            <div class="form-card-title">Quiz Information</div>
+                            <div class="form-card-desc">Basic details about your quiz</div>
+                        </div>
+                    </div>
+                    <div class="form-field">
+                        <label for="quizTitle" data-i18n="label_quiz_title">Quiz Title *</label>
+                        <input type="text" id="quizTitle" name="quizTitle" placeholder="Enter quiz title" required
+                            data-i18n="ph_quiz_title">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label for="teacherName" data-i18n="label_teacher_name">Teacher Name (Optional)</label>
+                            <input type="text" id="teacherName" name="teacherName" placeholder="Enter your name"
+                                data-i18n="ph_teacher_name">
+                        </div>
+                        <div class="form-field">
+                            <label for="teacherEmail" data-i18n="label_teacher_email">Teacher Email (Optional)</label>
+                            <input type="email" id="teacherEmail" name="teacherEmail" placeholder="Enter your email"
+                                data-i18n="ph_teacher_email">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Time Settings -->
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <div class="form-card-icon icon-warning">⏱️</div>
+                        <div>
+                            <div class="form-card-title">Time Settings</div>
+                            <div class="form-card-desc">Control when the quiz is accessible</div>
+                        </div>
+                    </div>
+                    <div class="form-row-3">
+                        <div class="form-field">
+                            <label for="startTime">Start Time (Optional)</label>
+                            <input type="datetime-local" id="startTime" name="startTime">
+                        </div>
+                        <div class="form-field">
+                            <label for="endTime">End Time (Optional)</label>
+                            <input type="datetime-local" id="endTime" name="endTime">
+                        </div>
+                        <div class="form-field">
+                            <label for="timeLimit">Time Limit (Minutes)</label>
+                            <input type="number" id="timeLimit" name="timeLimit" placeholder="e.g. 45" min="1">
+                        </div>
+                    </div>
+                    <div class="form-field">
+                        <label for="password" data-i18n="label_password">Results Password (Optional)</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="password" name="password"
+                                placeholder="Set a password to protect results" data-i18n="ph_password">
+                            <button type="button" class="toggle-password"
+                                onclick="togglePasswordVisibility('password')">
+                                <span class="eye-icon">👁️</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div> <!-- /.two-col-grid -->
+
+            <!-- Security -->
+            <div class="form-card">
+                <div class="form-card-header">
+                    <div class="form-card-icon icon-error">🛡️</div>
+                    <div>
+                        <div class="form-card-title">Security & Anti-Cheating</div>
+                        <div class="form-card-desc">Optional: restrict access and detect duplicates</div>
+                    </div>
+                </div>
+                <div class="security-box">
+                    <h4>🌐 IP Restriction</h4>
+                    <p>Only allow submissions from specific IP addresses (comma-separated).</p>
+                    <div class="ip-strip">
+                        <span>Your public IP:</span>
+                        <strong id="currentTeacherIP">Loading...</strong>
+                        <input type="hidden" id="currentTeacherIP_value" value="">
+                        <button type="button" class="ip-copy-btn"
+                            onclick="copyResult('currentTeacherIP_value')">[Copy]</button>
+                    </div>
+                    <input type="text" id="allowedIPs" name="allowedIPs" placeholder="e.g. 192.168.1.1, 10.0.0.5">
+                </div>
+                <div style="margin-top: 1rem;">
+                    <label class="check-option">
+                        <input type="checkbox" name="collectMAC" id="collectMAC" value="true">
+                        <div>
+                            <div class="check-label-bold">Collect Unique Device ID</div>
+                            <div class="check-label-sub">Helps identify multiple submissions from the same
+                                browser/device.</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Question Mode -->
+            <div class="form-card">
+                <div class="form-card-header">
+                    <div class="form-card-icon icon-success">🎲</div>
+                    <div>
+                        <div class="form-card-title" data-i18n="label_question_mode">Question Mode</div>
+                        <div class="form-card-desc">Choose how questions are selected</div>
+                    </div>
+                </div>
+                <label class="radio-option">
+                    <input type="radio" name="questionMode" value="all" id="questionModeAll" checked>
+                    <div class="radio-option-body">
+                        <div class="radio-option-title" data-i18n="option_all_questions">Use all questions</div>
+                        <div class="radio-option-desc">Include every question from the uploaded banks</div>
+                    </div>
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="questionMode" value="random" id="questionModeRandom">
+                    <div class="radio-option-body">
+                        <div class="radio-option-title" data-i18n="option_random_questions">Random subset</div>
+                        <div class="radio-option-desc">Pick a fixed number of questions randomly each time</div>
+                    </div>
+                </label>
+                <div id="randomCountWrap" style="display: none; margin-top: 0.75rem;">
+                    <label for="randomCount" data-i18n="label_random_count">Number of random questions</label>
+                    <input type="number" id="randomCount" name="randomCount" min="1" placeholder="e.g. 20"
+                        data-i18n="ph_random_count" style="max-width: 200px;">
+                </div>
+            </div>
+
+            <!-- Quiz Options -->
+            <div class="form-card">
+                <div class="form-card-header">
+                    <div class="form-card-icon icon-primary">⚙️</div>
+                    <div>
+                        <div class="form-card-title">Quiz Options</div>
+                        <div class="form-card-desc">Configure the number of answer choices</div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label style="display: block; margin-bottom: 0.75rem; color: #333; font-weight: 600;">Số lượng
+                        phương án (Number of Options)</label>
+                    <div class="options-count-row">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="radio" name="optionsCount" value="4" checked>
+                            <span>4 Phương án (A,B,C,D)</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="radio" name="optionsCount" value="3">
+                            <span>3 Phương án (A,B,C)</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="radio" name="optionsCount" value="101">
+                            <span>Giải mã ngành học phù hợp</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upload Banks -->
+            <div class="form-card">
+                <div class="form-card-header">
+                    <div class="form-card-icon icon-primary">📂</div>
+                    <div>
+                        <div class="form-card-title">Upload Question Banks</div>
+                        <div class="form-card-desc">Upload one or more Excel files (.xlsx/.xls)</div>
+                    </div>
+                </div>
+
+                <div id="banksContainer">
+                    <div class="bank-item">
+                        <div class="bank-header">
+                            <div style="display:flex; align-items:center;">
+                                <span class="bank-num">1</span>
+                                <span class="bank-title class='bank-title'">Question Bank 1</span>
+                            </div>
+                        </div>
+                        <div class="form-field">
+                            <label>Bank Name (Tên đề thi) *</label>
+                            <input type="text" class="bank-name" required placeholder="e.g. Chapter 1, Math Section">
+                        </div>
+                        <div class="form-field">
+                            <label>Skill Type (Loại kỹ năng) *</label>
+                            <input type="text" class="skill-type" required
+                                placeholder="e.g. Logic, Grammar, Calculation">
+                        </div> <!-- End form-field -->
+                        <div class="drop-zone" id="dropZone_0">
+                            <input type="file" class="bank-file" accept=".xlsx, .xls" required id="fileInput_0">
+                            <span class="dz-icon">📥</span>
+                            <div class="dz-title">Drag & drop your Excel file here</div>
+                            <div class="dz-sub">or <span style="color:var(--primary); font-weight:600; cursor:pointer;"
+                                    onclick="document.getElementById('fileInput_0').click()">browse to upload</span> ·
+                                .xlsx, .xls</div>
+                            <div class="dz-filename" id="dz-filename_0"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 0.25rem;">
+                    <button type="button" id="addBankBtn" class="btn btn-secondary" style="gap:6px;">
+                        ➕ Add Another Bank
+                    </button>
+                </div>
+            </div>
+
+            <!-- Submit -->
+            <div style="margin-bottom: 2rem;margin-top: 2rem; display: flex; justify-content: center;">
+                <button type="sumbit" id="uploadBtn" class="btn-primary" style=" font-size:1.05rem;"
+                    data-i18n="btn_upload">
+                    🚀 Upload & Create Quiz
+                </button>
+            </div>
+        </form>
+
+        <!-- Success Result -->
+        <div id="result" class="hidden" style="margin-top: 0; margin-bottom: 2rem;">
+            <div class="result-success-header">
+                <div class="check-icon">✅</div>
+                <h3>Quiz Created Successfully!</h3>
+                <p>Share the links below with your students.</p>
+            </div>
+
+            <div class="form-card" style="margin-top:0; display: none;">
+                <div class="link-card">
+                    <div class="link-card-label">🎓 Student Link</div>
+                    <div class="link-card-row">
+                        <input type="text" id="quizLink" readonly>
+                        <button class="btn" onclick="copyResult('quizLink')">Copy</button>
+                        <a href="#" id="openQuizBtn" class="btn btn-secondary" target="_blank">Open</a>
+                    </div>
+                </div>
+                <div class="link-card" style="display:none;" id="teacherLinkCard">
+                    <div class="link-card-label">👩‍🏫 Teacher Preview</div>
+                    <div class="link-card-row">
+                        <input type="text" id="teacherLink" readonly>
+                        <button class="btn" onclick="copyResult('teacherLink')">Copy</button>
+                        <a href="#" id="openTeacherBtn" class="btn btn-secondary" target="_blank">Open</a>
+                    </div>
+                </div>
+                <div class="link-card">
+                    <div class="link-card-label">📊 Results Dashboard</div>
+                    <div class="link-card-row">
+                        <a href="#" id="viewResultsBtn" class="btn btn-success" style="flex:1; text-align:center;">View
+                            Student Submissions</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History -->
+        <div class="form-card" id="historySection">
+            <div class="form-card-header" style="margin-bottom: 0.75rem;">
+                <div class="form-card-icon icon-primary">🗂️</div>
+                <div style="flex:1;">
+                    <div class="form-card-title" data-i18n="history_title">My Created Quizzes</div>
+                </div>
+                <button id="clearHistoryBtn" class="btn btn-danger" style="padding:6px 14px; font-size:0.8rem;"
+                    onclick="clearQuizHistory()" data-i18n="btn_clear_history">
+                    🗑 Clear History
+                </button>
+            </div>
+            <div id="quizHistoryList" class="history-grid">
+                <p style="text-align: center; color: var(--text-muted); padding: 1rem 0;" data-i18n="msg_no_history">No
+                    quizzes created yet.</p>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <a href="index.html" style="color: var(--primary); text-decoration: none; font-size: 0.9rem;">← Back to
+                Home</a>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <p data-i18n="footer_text">© 2019 - 2026 FPT Hà Nội. 2026 . All rights reserved. | <a
+                href="privacy.html">Privacy</a> |
+            <a href="policy.html">Policy</a>
+        </p>
+    </footer>
+
+
+
+
+    <script src="js/translations.js?v=1.1"></script>
+    <script>
+        const form = document.getElementById('uploadForm');
+        const resultDiv = document.getElementById('result');
+        const quizLinkInput = document.getElementById('quizLink');
+        const openQuizBtn = document.getElementById('openQuizBtn');
+        const questionModeAll = document.getElementById('questionModeAll');
+        const questionModeRandom = document.getElementById('questionModeRandom');
+        const randomCountWrap = document.getElementById('randomCountWrap');
+        const randomCountInput = document.getElementById('randomCount');
+        const addBankBtn = document.getElementById('addBankBtn');
+        const banksContainer = document.getElementById('banksContainer');
+
+        let bankCounter = 1;
+
+        addBankBtn.addEventListener('click', () => {
+            bankCounter++;
+            const bankHtml = `
+                <div class="bank-item" style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 15px; background: #fff;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h4 style="margin: 0; color: #2c3e50;" class="bank-title">Question Bank ${bankCounter}</h4>
+                        <button type="button" class="btn btn-remove-bank" style="background-color: #e74c3c; padding: 5px 10px; font-size: 0.8rem;">Xóa (Remove)</button>
+                    </div>
+                    <div class="input-group" style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; color: #333;">Tên đề thi (Bank Name) *</label>
+                        <input type="text" class="bank-name" required placeholder="e.g. Chapter ${bankCounter}" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;">
+                    </div>
+                    <div class="input-group" style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; color: #333;">Loại kỹ năng (Skill Type) *</label>
+                        <input type="text" class="skill-type" required placeholder="e.g. Grammar" style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;">
+                    </div>
+                    <div class="drop-zone" id="dropZone_${bankCounter}">
+                        <input type="file" class="bank-file" accept=".xlsx, .xls" required id="fileInput_${bankCounter}">
+                        <span class="dz-icon">📥</span>
+                        <div class="dz-title">Drag & drop your Excel file here</div>
+                        <div class="dz-sub">or <span style="color:var(--primary); font-weight:600; cursor:pointer;"
+                                onclick="document.getElementById('fileInput_${bankCounter}').click()">browse to upload</span> ·
+                            .xlsx, .xls</div>
+                        <div class="dz-filename" id="dz-filename_${bankCounter}"></div>
+                    </div>
+                </div>
+            `;
+            const div = document.createElement('div');
+            div.innerHTML = bankHtml;
+            banksContainer.appendChild(div.firstElementChild);
+            updateBankTitles();
+        });
+
+        banksContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('btn-remove-bank')) {
+                e.target.closest('.bank-item').remove();
+                updateBankTitles();
+            }
+        });
+
+        // Drag and drop wiring
+        function handleFileSelection(dropZone, file) {
+            if (!file) return;
+            const fileInput = dropZone.querySelector('.bank-file');
+
+            // Update input files using DataTransfer
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            fileInput.files = dataTransfer.files;
+
+            // Update UI
+            const dzFilename = dropZone.querySelector('.dz-filename');
+            dzFilename.textContent = '📄 ' + file.name;
+            dzFilename.classList.add('show');
+            dropZone.classList.remove('over');
+        }
+
+        banksContainer.addEventListener('change', (e) => {
+            if (e.target.classList.contains('bank-file')) {
+                const dropZone = e.target.closest('.drop-zone');
+                if (e.target.files.length > 0) {
+                    handleFileSelection(dropZone, e.target.files[0]);
+                }
+            }
+        });
+
+        banksContainer.addEventListener('dragover', (e) => {
+            const dropZone = e.target.closest('.drop-zone');
+            if (dropZone) {
+                e.preventDefault();
+                dropZone.classList.add('over');
+            }
+        });
+
+        banksContainer.addEventListener('dragleave', (e) => {
+            const dropZone = e.target.closest('.drop-zone');
+            if (dropZone) {
+                e.preventDefault();
+                dropZone.classList.remove('over');
+            }
+        });
+
+        banksContainer.addEventListener('drop', (e) => {
+            const dropZone = e.target.closest('.drop-zone');
+            if (dropZone) {
+                e.preventDefault();
+                dropZone.classList.remove('over');
+                if (e.dataTransfer.files.length > 0) {
+                    handleFileSelection(dropZone, e.dataTransfer.files[0]);
+                }
+            }
+        });
+
+        function updateBankTitles() {
+            const items = banksContainer.querySelectorAll('.bank-item');
+            items.forEach((item, index) => {
+                item.querySelector('.bank-title').innerText = `Question Bank ${index + 1}`;
+            });
+        }
+
+        function toggleRandomCount() {
+            randomCountWrap.style.display = questionModeRandom.checked ? 'block' : 'none';
+            if (!questionModeRandom.checked) randomCountInput.removeAttribute('required');
+            else randomCountInput.setAttribute('required', 'required');
+        }
+        questionModeAll.addEventListener('change', toggleRandomCount);
+        questionModeRandom.addEventListener('change', toggleRandomCount);
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const questionMode = (document.querySelector('input[name="questionMode"]:checked') || {}).value || 'all';
+            if (questionMode === 'random') {
+                const randomCountVal = document.getElementById('randomCount').value;
+                if (!randomCountVal || parseInt(randomCountVal, 10) < 1) {
+                    const lang = localStorage.getItem('lang') || 'en';
+                    alert(lang === 'vi' ? 'Vui lòng nhập số câu hỏi random (ít nhất 1).' : 'Please enter the number of random questions (at least 1).');
+                    return;
+                }
+            }
+
+            const formData = new FormData();
+
+            // Append static fields
+            const textFields = ['quizTitle', 'teacherName', 'teacherEmail', 'startTime', 'endTime', 'timeLimit', 'password', 'allowedIPs', 'randomCount'];
+            textFields.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && el.value) formData.append(id, el.value);
+            });
+
+            const modeChecked = document.querySelector('input[name="questionMode"]:checked');
+            if (modeChecked) formData.append('questionMode', modeChecked.value);
+
+            const optionsCountChecked = document.querySelector('input[name="optionsCount"]:checked');
+            if (optionsCountChecked) formData.append('optionsCount', optionsCountChecked.value);
+
+            const macChecked = document.getElementById('collectMAC').checked;
+            formData.append('collectMAC', macChecked);
+
+            // Append dynamic banks
+            const banks = document.querySelectorAll('.bank-item');
+            let hasFiles = false;
+            banks.forEach((bank, index) => {
+                const nameInp = bank.querySelector('.bank-name').value;
+                const skillInp = bank.querySelector('.skill-type').value;
+                const fileInp = bank.querySelector('.bank-file').files[0];
+                if (fileInp) {
+                    formData.append(`bankName_${index}`, nameInp);
+                    formData.append(`skillType_${index}`, skillInp);
+                    formData.append(`file_${index}`, fileInp);
+                    hasFiles = true;
+                }
+            });
+
+            if (!hasFiles) {
+                alert('Please upload at least one question bank.');
+                return;
+            }
+
+            // Assuming showMessage is defined elsewhere or is a placeholder
+            // If not, you might want to define it or revert to alert/console.log
+            if (typeof showMessage === 'function') {
+                showMessage('Uploading...', 'info');
+            }
+            const submitBtn = document.getElementById('uploadBtn');
+            submitBtn.textContent = 'Uploading...';
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    const baseUrl = window.location.origin;
+                    const studentUrl =  optionsCountChecked.value == '101' ? `${baseUrl}/assessment.html?id=${data.quizId}` : `${baseUrl}/quiz.html?id=${data.quizId}`;
+                    const teacherUrl = optionsCountChecked.value == '101' ? `${baseUrl}/assessment.html?id=${data.quizId}&role=teacher` :   `${baseUrl}/quiz.html?id=${data.quizId}&role=teacher`;
+                    const resultsUrl = optionsCountChecked.value == '101' ? `${baseUrl}/assessment-result.html?id=${data.quizId}` : `${baseUrl}/results.html?id=${data.quizId}`;
+
+                    quizLinkInput.value = studentUrl;
+                    document.getElementById('teacherLink').value = teacherUrl;
+
+                    openQuizBtn.href = studentUrl;
+                    document.getElementById('openTeacherBtn').href = teacherUrl;
+                    document.getElementById('viewResultsBtn').href = resultsUrl;
+
+                    resultDiv.classList.remove('hidden');
+
+                    const qTitle = document.getElementById('quizTitle').value;
+
+                    form.reset();
+                    toggleRandomCount(); // ẩn ô số câu random sau khi reset về option "tất cả"
+
+                    // Save to history
+                    saveQuizToHistory(data.quizId, qTitle, studentUrl, teacherUrl, resultsUrl, new Date().toLocaleString());
+                    renderQuizHistory();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                console.error(error);
+                alert('An error occurred while uploading.');
+            } finally {
+                submitBtn.textContent = 'Upload & Create';
+                submitBtn.disabled = false;
+            }
+        });
+
+        function copyResult(elementId) {
+            const copyText = document.getElementById(elementId);
+            copyText.select();
+            copyText.setSelectionRange(0, 99999); // For mobile devices
+            navigator.clipboard.writeText(copyText.value);
+            alert("Copied to clipboard!");
+        }
+
+        // --- History Logic ---
+        function getQuizHistory() {
+            const history = localStorage.getItem('teacher_quiz_history');
+            return history ? JSON.parse(history) : [];
+        }
+
+        function saveQuizToHistory(id, title, studentUrl, teacherUrl, resultsUrl, date) {
+            const history = getQuizHistory();
+            history.unshift({ id, title, studentUrl, teacherUrl, resultsUrl, date });
+            localStorage.setItem('teacher_quiz_history', JSON.stringify(history));
+        }
+
+        function deleteHistoryItem(index) {
+            let history = getQuizHistory();
+            history.splice(index, 1);
+            localStorage.setItem('teacher_quiz_history', JSON.stringify(history));
+            renderQuizHistory();
+        }
+
+        function clearQuizHistory() {
+            if (confirm("Are you sure you want to clear your local quiz creation history? (This does not delete the quizzes on the server)")) {
+                localStorage.removeItem('teacher_quiz_history');
+                renderQuizHistory();
+            }
+        }
+
+        function renderQuizHistory() {
+            const history = getQuizHistory();
+            const listContainer = document.getElementById('quizHistoryList');
+
+            if (history.length === 0) {
+                listContainer.innerHTML = '<p style="text-align: center; color: #666;" data-i18n="msg_no_history">No quizzes created yet.</p>';
+                // Re-apply translations for static text if needed, simplest is to let normal loading handle it, but since dynamic:
+                const lang = localStorage.getItem('lang') || 'en';
+                if (lang === 'vi') listContainer.innerHTML = '<p style="text-align: center; color: #666;">Chưa có bài quiz nào được tạo.</p>';
+                return;
+            }
+
+            let html = '';
+            history.forEach((item, index) => {
+                html += `
+                    <div style="border: 1px solid #eee; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; background: #fafafa;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                            <h4 style="margin: 0; color: #2c3e50;">${item.title ? item.title + ' (ID: ' + item.id + ')' : 'Quiz ID: ' + item.id}</h4>
+                            <span style="font-size: 0.85rem; color: #888;">${item.date}</span>
+                        </div>
+                        <div style="font-size: 0.9rem; margin-bottom: 0.5rem;">
+                            <a href="${item.studentUrl}" target="_blank" style="color: #3498db; margin-right: 15px;">🔗 Student Link</a>
+                            <a href="${item.resultsUrl}" target="_blank" style="color: #27ae60;">📊 Results</a>
+                        </div>
+                        <div style="text-align: right;">
+                            <button class="btn" style="background-color: #e74c3c; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="deleteHistoryItem(${index})">Delete History</button>
+                        </div>
+                    </div>
+                `;
+            });
+            listContainer.innerHTML = html;
+        }
+
+        async function fetchTeacherIP() {
+            try {
+                // Fetch strictly IPv4
+                const response = await fetch('https://api4.ipify.org?format=json');
+                const data = await response.json();
+                if (data.ip) {
+                    document.getElementById('currentTeacherIP').innerText = data.ip;
+                    document.getElementById('currentTeacherIP_value').value = data.ip;
+                } else {
+                    throw new Error('No IP');
+                }
+            } catch (error) {
+                console.error('Error fetching IPv4:', error);
+                // Fallback to our own server, which might return IPv6 if the client uses it
+                try {
+                    const res = await fetch('/api/ip');
+                    const d = await res.json();
+                    if (d.ip) {
+                        document.getElementById('currentTeacherIP').innerText = d.ip;
+                        document.getElementById('currentTeacherIP_value').value = d.ip;
+                    } else {
+                        document.getElementById('currentTeacherIP').innerText = 'Unable to fetch';
+                    }
+                } catch (e) {
+                    document.getElementById('currentTeacherIP').innerText = 'Error fetching IP';
+                }
+            }
+        }
+
+        // Initial render
+        document.addEventListener('DOMContentLoaded', () => {
+            renderQuizHistory();
+            fetchTeacherIP();
+        });
+    </script>
+</body>
+
+</html>
