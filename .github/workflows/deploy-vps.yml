@@ -1,0 +1,79 @@
+name: Deploy To VPS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          APP_DIR: /var/www/polytest
+          APP_NAME: polytest
+          DEPLOY_BRANCH: main
+          VPS_GIT_REPO: ${{ secrets.VPS_GIT_REPO }}
+          APP_ENV: ${{ secrets.APP_ENV }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          envs: APP_DIR,APP_NAME,DEPLOY_BRANCH,VPS_GIT_REPO,APP_ENV
+          script_stop: true
+          script: |
+            set -e
+            echo "[DEPLOY] Start at $(date)"
+            echo "[DEPLOY] App dir: $APP_DIR"
+
+            if [ -z "$VPS_GIT_REPO" ]; then
+              echo "[DEPLOY] Missing VPS_GIT_REPO secret"
+              exit 1
+            fi
+
+            mkdir -p "$APP_DIR"
+
+            if [ ! -d "$APP_DIR/.git" ]; then
+              echo "[DEPLOY] First deploy: cloning repo..."
+              rm -rf "$APP_DIR"
+              git clone "$VPS_GIT_REPO" "$APP_DIR"
+            fi
+
+            cd "$APP_DIR"
+            git fetch --all --prune
+            git checkout "$DEPLOY_BRANCH"
+            git reset --hard "origin/$DEPLOY_BRANCH"
+
+            echo "[DEPLOY] Installing dependencies..."
+            if command -v npm >/dev/null 2>&1; then
+              npm ci --omit=dev || npm install --omit=dev
+            else
+              echo "[DEPLOY] npm not found on VPS"
+              exit 1
+            fi
+
+            if [ -n "$APP_ENV" ]; then
+              echo "[DEPLOY] Writing .env from APP_ENV secret"
+              printf "%s" "$APP_ENV" > .env
+            else
+              echo "[DEPLOY] APP_ENV is empty, keeping existing .env if any"
+            fi
+
+            if ! command -v pm2 >/dev/null 2>&1; then
+              echo "[DEPLOY] Installing pm2..."
+              npm install -g pm2
+            fi
+
+            if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
+              pm2 restart "$APP_NAME" --update-env
+            else
+              pm2 start server.js --name "$APP_NAME"
+            fi
+
+            pm2 save
+            echo "[DEPLOY] Done at $(date)"
