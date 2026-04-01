@@ -12,6 +12,7 @@ const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 const fetch = require('node-fetch');
 const { Blob } = require('buffer');
+const FormData = require('form-data');
 
 // Compatibility for environments where global Fetch classes are missing (Node < 18).
 if (typeof globalThis.Headers === 'undefined') {
@@ -29,8 +30,8 @@ if (typeof globalThis.fetch === 'undefined') {
 if (typeof globalThis.Blob === 'undefined') {
     globalThis.Blob = Blob;
 }
-if (typeof globalThis.FormData === 'undefined' && fetch.FormData) {
-    globalThis.FormData = fetch.FormData;
+if (typeof globalThis.FormData === 'undefined') {
+    globalThis.FormData = FormData;
 }
 if (typeof globalThis.File === 'undefined' && fetch.File) {
     globalThis.File = fetch.File;
