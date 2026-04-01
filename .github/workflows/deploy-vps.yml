@@ -20,49 +20,38 @@ jobs:
           script_stop: true
           # Đưa biến môi trường trực tiếp vào câu lệnh để tránh lỗi truyền biến
           script: |
+            # 1. Nạp đường dẫn NVM và Node vào phiên làm việc SSH
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            
+            # 2. Ép sử dụng đúng version node bạn đang có (v16.20.0)
+            nvm use v16.20.0 || echo "Using default node"
+
+            # Các biến cũ của bạn
             export APP_DIR="/var/www/polytest"
-            export VPS_GIT_REPO="${{ secrets.VPS_GIT_REPO }}"
             export DEPLOY_BRANCH="main"
             export APP_NAME="polytest"
 
             echo "[DEPLOY] Bat dau tai: $(date)"
             
-            # Xóa trắng làm lại nếu thư mục không có .git
-            if [ -d "$APP_DIR" ] && [ ! -d "$APP_DIR/.git" ]; then
-              rm -rf "$APP_DIR"
-            fi
-
-            if [ ! -d "$APP_DIR" ]; then
-              echo "[DEPLOY] Clone moi tu: $VPS_GIT_REPO"
-              git clone "$VPS_GIT_REPO" "$APP_DIR"
-            fi
-
             cd "$APP_DIR"
             git fetch --all
             git checkout -f "$DEPLOY_BRANCH"
             git reset --hard "origin/$DEPLOY_BRANCH"
 
-            echo "[DEPLOY] Danh sach file sau khi clone:"
-            ls -la
-
-            echo "[DEPLOY] Cai dat dependencies..."
+            echo "[DEPLOY] Dang cai dependencies..."
+            # Bây giờ lệnh npm sẽ hoạt động vì đã nạp nvm.sh ở trên
             npm install --omit=dev
-
-            echo "[DEPLOY] Ghi file .env..."
-            echo "${{ secrets.APP_ENV }}" > .env
 
             if ! command -v pm2 >/dev/null 2>&1; then
               npm install -g pm2
             fi
 
-            # Tim file chay (server.js hoặc index.js)
+            # Khởi động app
             ENTRY_FILE="server.js"
-            if [ ! -f "$ENTRY_FILE" ]; then
-              if [ -f "index.js" ]; then ENTRY_FILE="index.js"; fi
-            fi
-
+            if [ ! -f "$ENTRY_FILE" ] && [ -f "index.js" ]; then ENTRY_FILE="index.js"; fi
+            
             pm2 delete "$APP_NAME" || true
             pm2 start "$ENTRY_FILE" --name "$APP_NAME"
             pm2 save
-            
             echo "[DEPLOY] Hoan tat!"
