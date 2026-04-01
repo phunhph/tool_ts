@@ -9,75 +9,60 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     steps:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
-        env:
-          APP_DIR: /var/www/polytest
-          APP_NAME: polytest
-          DEPLOY_BRANCH: main
-          VPS_GIT_REPO: ${{ secrets.VPS_GIT_REPO }}
-          APP_ENV: ${{ secrets.APP_ENV }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
-          envs: APP_DIR,APP_NAME,DEPLOY_BRANCH,VPS_GIT_REPO,APP_ENV
           script_stop: true
+          # Đưa biến môi trường trực tiếp vào câu lệnh để tránh lỗi truyền biến
           script: |
-            set -e
-            echo "[DEPLOY] Start at $(date)"
-            
-            # 1. Kiểm tra biến môi trường
-            if [ -z "$VPS_GIT_REPO" ]; then echo "LỖI: Thiếu VPS_GIT_REPO secret"; exit 1; fi
+            export APP_DIR="/var/www/polytest"
+            export VPS_GIT_REPO="${{ secrets.VPS_GIT_REPO }}"
+            export DEPLOY_BRANCH="main"
+            export APP_NAME="polytest"
 
-            # 2. Xử lý thư mục (Dùng sudo nếu cần, nhưng bạn đang dùng root nên mkdir -p là đủ)
-            mkdir -p "$APP_DIR"
+            echo "[DEPLOY] Bat dau tai: $(date)"
             
-            # 3. Clone hoặc Update code
-            if [ ! -d "$APP_DIR/.git" ]; then
-              echo "[DEPLOY] Thư mục mới, bắt đầu clone từ: $VPS_GIT_REPO"
-              # Xóa thư mục nếu nó tồn tại nhưng không phải git repo để tránh lỗi clone
+            # Xóa trắng làm lại nếu thư mục không có .git
+            if [ -d "$APP_DIR" ] && [ ! -d "$APP_DIR/.git" ]; then
               rm -rf "$APP_DIR"
+            fi
+
+            if [ ! -d "$APP_DIR" ]; then
+              echo "[DEPLOY] Clone moi tu: $VPS_GIT_REPO"
               git clone "$VPS_GIT_REPO" "$APP_DIR"
             fi
 
             cd "$APP_DIR"
-            echo "[DEPLOY] Đang lấy code mới nhất từ branch $DEPLOY_BRANCH..."
             git fetch --all
             git checkout -f "$DEPLOY_BRANCH"
             git reset --hard "origin/$DEPLOY_BRANCH"
 
-            # 4. Cài đặt Dependencies (Sửa lỗi npm ci)
-            echo "[DEPLOY] Đang cài đặt dependencies..."
-            # Dùng npm install thay vì ci nếu repo public thường xuyên thay đổi lockfile
+            echo "[DEPLOY] Danh sach file sau khi clone:"
+            ls -la
+
+            echo "[DEPLOY] Cai dat dependencies..."
             npm install --omit=dev
 
-            # 5. Ghi file .env (Bọc trong nháy kép để tránh lỗi ký tự đặc biệt)
-            if [ -n "$APP_ENV" ]; then
-              echo "[DEPLOY] Đang tạo file .env..."
-              echo "$APP_ENV" > .env
-            fi
+            echo "[DEPLOY] Ghi file .env..."
+            echo "${{ secrets.APP_ENV }}" > .env
 
-            # 6. Quản lý PM2 (Cực kỳ quan trọng)
             if ! command -v pm2 >/dev/null 2>&1; then
-              echo "[DEPLOY] Đang cài đặt PM2..."
               npm install -g pm2
             fi
 
-            echo "[DEPLOY] Khởi động ứng dụng bằng PM2..."
-            # Kiểm tra xem file chạy chính là gì. Thử server.js, nếu không thấy thì báo lỗi rõ ràng.
+            # Tim file chay (server.js hoặc index.js)
             ENTRY_FILE="server.js"
             if [ ! -f "$ENTRY_FILE" ]; then
-               if [ -f "index.js" ]; then ENTRY_FILE="index.js"; 
-               else echo "LỖI: Không tìm thấy server.js hoặc index.js trong thư mục gốc!"; ls -la; exit 1; fi
+              if [ -f "index.js" ]; then ENTRY_FILE="index.js"; fi
             fi
 
-            # Restart nếu đã chạy, nếu chưa thì Start mới
-            pm2 describe "$APP_NAME" > /dev/null 2>&1 && pm2 delete "$APP_NAME"
+            pm2 delete "$APP_NAME" || true
             pm2 start "$ENTRY_FILE" --name "$APP_NAME"
-            
             pm2 save
-            echo "[DEPLOY] Hoàn tất thành công lúc $(date)"
+            
+            echo "[DEPLOY] Hoan tat!"
