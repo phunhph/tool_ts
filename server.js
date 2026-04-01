@@ -1,5 +1,5 @@
 const express = require('express');
-require('dotenv').config();
+require('dotenv').config({ override: true });
 const compression = require('compression');
 const multer = require('multer');
 const xlsx = require('xlsx');
@@ -33,7 +33,8 @@ const DEFAULT_ADMIN_USERNAME = process.env.DEFAULT_ADMIN_USERNAME || 'hungnq';
 const DEFAULT_ADMIN_PASSWORD = process.env.DEFAULT_ADMIN_PASSWORD || 'HungNQ@1979';
 const HYBRID_AI_PROVIDER = process.env.HYBRID_AI_PROVIDER || 'gemini';
 const GEMINI_API_KEY = String(process.env.GEMINI_API_KEY || '').trim();
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const GEMINI_MAX_OUTPUT_TOKENS = Math.max(512, Math.min(8192, parseInt(String(process.env.GEMINI_MAX_OUTPUT_TOKENS || '3072'), 10) || 3072));
 
 // Connect to MongoDB and ensure default admin exists before accepting requests
 let ensureAdminPromise = null;
@@ -666,8 +667,25 @@ function extractJsonObject(text) {
     try { return JSON.parse(candidate); } catch (_) { return null; }
 }
 
+function tryRecoverJsonObject(text) {
+    if (!text) return null;
+    const s = String(text);
+    const first = s.indexOf('{');
+    if (first === -1) return null;
+    let candidate = s.slice(first);
+    // Naive recovery for truncated JSON: close missing ] and }.
+    const openSq = (candidate.match(/\[/g) || []).length;
+    const closeSq = (candidate.match(/\]/g) || []).length;
+    if (closeSq < openSq) candidate += ']'.repeat(openSq - closeSq);
+    const openCurly = (candidate.match(/\{/g) || []).length;
+    const closeCurly = (candidate.match(/\}/g) || []).length;
+    if (closeCurly < openCurly) candidate += '}'.repeat(openCurly - closeCurly);
+    try { return JSON.parse(candidate); } catch (_) { return null; }
+}
+
 async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
     const t0 = Date.now();
+    const logPrefix = `[HYBRID_AI][quizId=${quizId || '-'}][attemptId=${attemptId ? String(attemptId) : '-'}]`;
     
     // 1. Tính toán điểm kỹ năng từ logic cứng (nếu hàm này trả về object các kỹ năng)
     let derivedSkillScores = typeof deriveSkillScoresFromAnswers === 'function' 
@@ -802,56 +820,85 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
     ].join('\n');
 
     try {
-        const modelCandidates = Array.from(new Set([
-            String(model || '').trim(),
-            'gemini-1.5-flash',
-            'gemini-1.5-flash-8b'
-        ].filter(Boolean)));
+        const modelCandidates = [String(model || '').trim()].filter(Boolean);
+        const keySuffix = apiKey ? apiKey.slice(-6) : 'none';
+        console.log(`${logPrefix} start provider=${HYBRID_AI_PROVIDER} models=${modelCandidates.join(',')} keySuffix=***${keySuffix}`);
         let lastError = null;
 
         for (const mdl of modelCandidates) {
             try {
-                const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mdl}:generateContent`, {
-                    method: 'POST',
-                    headers: {
+                const resp = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${mdl}:generateContent`,
+                    {
+                      method: 'POST',
+                      headers: {
                         'Content-Type': 'application/json',
-                        'X-goog-api-key': `${apiKey}`
-                    },
-                    body: JSON.stringify({
-                        systemInstruction: {
-                            parts: [
-                                {
-                                    text: 'Bạn là AI hướng nghiệp. Luôn trả về đúng một JSON object (không markdown). Cấu trúc: {"suggestedMajors":[{"majorName":"tên trong majorsList","score":số_0_100,"reasons":["lý_do_có_trích_dẫn_câu_trả_lời"],"matchedSkills":["kỹ_năng"]}],"explanationSummary":"...","trendSignals":{"strengths":[],"risks":[],"marketNote":""}}. Điểm score phải phân biệt theo mức phù hợp, không lặp cùng một con số cho mọi ngành.'
-                                }
-                            ]
-                        },
+                        'X-goog-api-key': apiKey
+                      },
+                      body: JSON.stringify({
                         contents: [
-                            {
-                                role: "user",
-                                parts: [{ text: promptText }]
-                            }
+                          {
+                            role: "user",
+                            parts: [{
+                              text: `
+                  Bạn là AI hướng nghiệp. Luôn trả về đúng một JSON object (không markdown).
+                  
+                  Cấu trúc:
+                  {
+                    "suggestedMajors":[
+                      {
+                        "majorName":"tên trong majorsList",
+                        "score":0-100,
+                        "reasons":["..."],
+                        "matchedSkills":["..."]
+                      }
+                    ],
+                    "explanationSummary":"...",
+                    "trendSignals":{
+                      "strengths":[],
+                      "risks":[],
+                      "marketNote":""
+                    }
+                  }
+                  
+                  Yêu cầu:
+                  - Score phải khác nhau
+                  - Không được trả text ngoài JSON
+                  - Mỗi reasons item <= 20 từ
+                  - explanationSummary <= 80 từ
+                  
+                  DATA:
+                  ${promptText}
+                              `
+                            }]
+                          }
                         ],
                         generationConfig: {
                             temperature: 0.45,
-                            maxOutputTokens: 700,
-                            responseMimeType: 'application/json'
-                        }
-                    })
-                });
+                            maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS,
+                            thinkingConfig: {
+                              thinkingBudget: 0
+                            }
+                          }
+                      })
+                    }
+                  );
 
                 if (!resp.ok) {
                     const errTxt = await resp.text();
                     lastError = `Gemini ${mdl} HTTP ${resp.status}: ${errTxt.slice(0, 500)}`;
-                    console.error(lastError);
+                    console.error(`${logPrefix} ${lastError}`);
                     continue;
                 }
 
                 const data = await resp.json();
                 const content = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                const parsed = extractJsonObject(content);
+                const finishReason = String(data?.candidates?.[0]?.finishReason || '');
+                let parsed = extractJsonObject(content);
+                if (!parsed) parsed = tryRecoverJsonObject(content);
                 if (!parsed || !Array.isArray(parsed.suggestedMajors) || parsed.suggestedMajors.length === 0) {
                     lastError = `Gemini ${mdl} invalid payload`;
-                    console.error(lastError, content ? content.slice(0, 400) : '<empty>');
+                    console.error(`${logPrefix} ${lastError} finishReason=${finishReason} contentLength=${content.length} content=${content ? content.slice(0, 400) : '<empty>'}`);
                     continue;
                 }
 
@@ -862,6 +909,9 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
                     matchedSkills: Array.isArray(m.matchedSkills) ? m.matchedSkills : []
                 }));
                 const suggestedMajors = mergeSuggestedMajorsScoresFromBaseline(mapped, baseline);
+
+               
+                
 
                 return {
                     provider: 'gemini',
@@ -877,13 +927,12 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
                 };
             } catch (innerErr) {
                 lastError = `Gemini ${mdl} exception: ${innerErr.message || innerErr}`;
-                console.error(lastError);
             }
         }
 
         return returnErrorState('Lỗi kết nối Gemini API', lastError);
     } catch (e) {
-        console.error("Lỗi thực thi runHybridAi:", e);
+        console.error(`${logPrefix} fatal_error`, e);
         return returnErrorState('Lỗi hệ thống', e.message);
     }
 }
@@ -1080,6 +1129,7 @@ app.post('/api/submit/hybrid-ai', async (req, res) => {
         });
 
         const ai = await runHybridAi({ quizId: qid, attemptId: attempt._id, answers, configQuestions: cfg.questions });
+  
         const run = await AssessmentAiRun.create({
             attemptId: attempt._id,
             quizId: qid,
@@ -1166,22 +1216,40 @@ app.post('/api/assessments/attempts/:attemptId/retry-ai', async (req, res) => {
             answers: attempt.answers || {},
             configQuestions: cfg.questions
         });
-
-        const run = await AssessmentAiRun.create({
-            attemptId: attempt._id,
-            quizId: attempt.quizId,
-            derivedSkillScores: ai.derivedSkillScores,
-            suggestedMajors: ai.suggestedMajors,
-            explanationSummary: ai.explanationSummary,
-            trendSignals: ai.trendSignals,
-            provider: ai.provider,
-            modelName: ai.modelName,
-            modelParams: ai.modelParams,
-            latencyMs: ai.latencyMs,
-            fallbackUsed: ai.fallbackUsed,
-            promptSnapshot: ai.promptSnapshot,
-            aiRawResponse: ai.aiRawResponse
-        });
+        const existingRun = await AssessmentAiRun.findOne({ attemptId: attempt._id }).sort({ createdAt: -1 });
+        let run;
+        if (existingRun) {
+            existingRun.quizId = attempt.quizId;
+            existingRun.derivedSkillScores = ai.derivedSkillScores;
+            existingRun.suggestedMajors = ai.suggestedMajors;
+            existingRun.explanationSummary = ai.explanationSummary;
+            existingRun.trendSignals = ai.trendSignals;
+            existingRun.provider = ai.provider;
+            existingRun.modelName = ai.modelName;
+            existingRun.modelParams = ai.modelParams;
+            existingRun.latencyMs = ai.latencyMs;
+            existingRun.fallbackUsed = ai.fallbackUsed;
+            existingRun.promptSnapshot = ai.promptSnapshot;
+            existingRun.aiRawResponse = ai.aiRawResponse;
+            existingRun.createdAt = new Date(); // keep latest retry as newest snapshot
+            run = await existingRun.save();
+        } else {
+            run = await AssessmentAiRun.create({
+                attemptId: attempt._id,
+                quizId: attempt.quizId,
+                derivedSkillScores: ai.derivedSkillScores,
+                suggestedMajors: ai.suggestedMajors,
+                explanationSummary: ai.explanationSummary,
+                trendSignals: ai.trendSignals,
+                provider: ai.provider,
+                modelName: ai.modelName,
+                modelParams: ai.modelParams,
+                latencyMs: ai.latencyMs,
+                fallbackUsed: ai.fallbackUsed,
+                promptSnapshot: ai.promptSnapshot,
+                aiRawResponse: ai.aiRawResponse
+            });
+        }
 
         res.json({
             success: true,

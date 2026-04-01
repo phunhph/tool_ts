@@ -286,9 +286,15 @@
         document.getElementById('marketText').innerText = data.trendSignals.marketNote;
         const summaryEl = document.getElementById('summaryText');
         const isAiFallback = String(data.explanationSummary || '').toLowerCase().includes('lỗi kết nối gemini api');
+        const hasTrendData = (
+            Array.isArray(data?.trendSignals?.strengths) && data.trendSignals.strengths.length > 0
+        ) || (
+            Array.isArray(data?.trendSignals?.risks) && data.trendSignals.risks.length > 0
+        ) || String(data?.trendSignals?.marketNote || '').trim().length > 0;
         const analysisGridEl = document.querySelector('#mainResult .analysis-grid');
         if (analysisGridEl) {
-            analysisGridEl.style.display = isAiFallback ? 'none' : 'grid';
+            // Only hide when fallback AND there is no meaningful analysis data.
+            analysisGridEl.style.display = (isAiFallback && !hasTrendData) ? 'none' : 'grid';
         }
         if (isAiFallback && currentAttemptId) {
             const btn = document.createElement('button');
@@ -303,6 +309,7 @@
                         method: 'POST'
                     });
                     const payload = await resp.json().catch(() => ({}));
+  
                     if (!resp.ok || !payload.success) throw new Error(payload?.error || 'Retry failed');
                     window.location.reload();
                 } catch (e) {
