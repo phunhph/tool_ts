@@ -11,6 +11,21 @@ const mongoose = require('mongoose');
 const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 const fetch = require('node-fetch');
+
+// Compatibility for environments where global Fetch classes are missing (Node < 18).
+if (typeof globalThis.Headers === 'undefined') {
+    globalThis.Headers = fetch.Headers;
+}
+if (typeof globalThis.Request === 'undefined') {
+    globalThis.Request = fetch.Request;
+}
+if (typeof globalThis.Response === 'undefined') {
+    globalThis.Response = fetch.Response;
+}
+if (typeof globalThis.fetch === 'undefined') {
+    globalThis.fetch = fetch;
+}
+
 const { google } = require('googleapis');
 
 // Models
@@ -693,6 +708,7 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
         : { "Logic": 0, "Kỹ thuật": 0, "Sáng tạo": 0, "Giao tiếp": 0, "Ngoại ngữ": 0 };
 
     const submittedAnswerEvidence = buildSubmittedAnswerEvidence(configQuestions || [], answers || {});
+    const evidenceCount = Array.isArray(submittedAnswerEvidence) ? submittedAnswerEvidence.length : 0;
 
     const apiKey = GEMINI_API_KEY;
     const model = GEMINI_MODEL;
@@ -743,6 +759,7 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
 
     const hasSignal = topSkills.length > 0 && topSkills[0].v > 0;
     if (!hasSignal) {
+        console.warn(`${logPrefix} skip_ai reason=no_skill_signal topSkills=${JSON.stringify(topSkills.slice(0, 3))}`);
         return {
             provider: 'rules',
             modelName: '',
@@ -758,6 +775,7 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
     }
 
     if (!submittedAnswerEvidence.length) {
+        console.warn(`${logPrefix} skip_ai reason=no_submitted_answer_evidence configQuestions=${Array.isArray(configQuestions) ? configQuestions.length : 0}`);
         return {
             provider: 'rules',
             modelName: '',
@@ -773,9 +791,11 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
     }
 
     if (HYBRID_AI_PROVIDER !== 'gemini') {
+        console.error(`${logPrefix} provider_error provider=${HYBRID_AI_PROVIDER}`);
         return returnErrorState(`Unsupported HYBRID_AI_PROVIDER: ${HYBRID_AI_PROVIDER}`);
     }
     if (!apiKey) {
+        console.error(`${logPrefix} config_error missing=GEMINI_API_KEY`);
         return returnErrorState('Missing GEMINI_API_KEY in environment');
     }
 
@@ -822,11 +842,12 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
     try {
         const modelCandidates = [String(model || '').trim()].filter(Boolean);
         const keySuffix = apiKey ? apiKey.slice(-6) : 'none';
-        console.log(`${logPrefix} start provider=${HYBRID_AI_PROVIDER} models=${modelCandidates.join(',')} keySuffix=***${keySuffix}`);
+        console.log(`${logPrefix} start provider=${HYBRID_AI_PROVIDER} models=${modelCandidates.join(',')} keySuffix=***${keySuffix} evidenceCount=${evidenceCount} promptChars=${promptText.length}`);
         let lastError = null;
 
         for (const mdl of modelCandidates) {
             try {
+                console.log(`${logPrefix} call_model model=${mdl} maxOutputTokens=${GEMINI_MAX_OUTPUT_TOKENS}`);
                 const resp = await fetch(
                     `https://generativelanguage.googleapis.com/v1beta/models/${mdl}:generateContent`,
                     {
@@ -894,11 +915,12 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
                 const data = await resp.json();
                 const content = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
                 const finishReason = String(data?.candidates?.[0]?.finishReason || '');
+                const usage = data?.usageMetadata || {};
                 let parsed = extractJsonObject(content);
                 if (!parsed) parsed = tryRecoverJsonObject(content);
                 if (!parsed || !Array.isArray(parsed.suggestedMajors) || parsed.suggestedMajors.length === 0) {
                     lastError = `Gemini ${mdl} invalid payload`;
-                    console.error(`${logPrefix} ${lastError} finishReason=${finishReason} contentLength=${content.length} content=${content ? content.slice(0, 400) : '<empty>'}`);
+                    console.error(`${logPrefix} ${lastError} finishReason=${finishReason} promptTokens=${usage.promptTokenCount || 0} outputTokens=${usage.candidatesTokenCount || 0} thoughtsTokens=${usage.thoughtsTokenCount || 0} contentLength=${content.length} content=${content ? content.slice(0, 400) : '<empty>'}`);
                     continue;
                 }
 
@@ -927,9 +949,11 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
                 };
             } catch (innerErr) {
                 lastError = `Gemini ${mdl} exception: ${innerErr.message || innerErr}`;
+                console.error(`${logPrefix} ${lastError}`);
             }
         }
 
+        console.error(`${logPrefix} fallback_used reason=gemini_unavailable lastError=${String(lastError || '')}`);
         return returnErrorState('Lỗi kết nối Gemini API', lastError);
     } catch (e) {
         console.error(`${logPrefix} fatal_error`, e);
@@ -1098,6 +1122,7 @@ app.post('/api/submit/hybrid-ai', async (req, res) => {
         const qid = String(quizId || '').trim();
         if (!qid) return res.status(400).json({ error: 'Missing quizId' });
         if (!answers || typeof answers !== 'object') return res.status(400).json({ error: 'Missing answers' });
+        console.log(`[SUBMIT_HYBRID_AI][quizId=${qid}] incoming answers=${Object.keys(answers || {}).length} student=${String(studentName || '').slice(0, 80)}`);
 
         const quiz = await Quiz.findOne({ id: qid });
         if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
@@ -1129,6 +1154,7 @@ app.post('/api/submit/hybrid-ai', async (req, res) => {
         });
 
         const ai = await runHybridAi({ quizId: qid, attemptId: attempt._id, answers, configQuestions: cfg.questions });
+        console.log(`[SUBMIT_HYBRID_AI][quizId=${qid}][attemptId=${attempt._id}] ai_done fallbackUsed=${!!ai?.fallbackUsed} model=${ai?.modelName || ''} latencyMs=${Number(ai?.latencyMs || 0)}`);
   
         const run = await AssessmentAiRun.create({
             attemptId: attempt._id,
@@ -1170,7 +1196,10 @@ app.post('/api/submit/hybrid-ai', async (req, res) => {
             trendSignals: run.trendSignals
         });
     } catch (e) {
-        console.error(e);
+        console.error('[SUBMIT_HYBRID_AI] failed', {
+            message: e?.message || 'Unknown error',
+            stack: e?.stack || ''
+        });
         res.status(500).json({ error: 'Server error' });
     }
 });
@@ -1202,6 +1231,7 @@ app.post('/api/assessments/attempts/:attemptId/retry-ai', async (req, res) => {
     try {
         const attemptId = String(req.params.attemptId || '').trim();
         if (!attemptId) return res.status(400).json({ error: 'Missing attemptId' });
+        console.log(`[RETRY_AI][attemptId=${attemptId}] start`);
 
         const attempt = await AssessmentAttempt.findById(attemptId);
         if (!attempt) return res.status(404).json({ error: 'Attempt not found' });
@@ -1216,6 +1246,7 @@ app.post('/api/assessments/attempts/:attemptId/retry-ai', async (req, res) => {
             answers: attempt.answers || {},
             configQuestions: cfg.questions
         });
+        console.log(`[RETRY_AI][attemptId=${attemptId}] ai_done fallbackUsed=${!!ai?.fallbackUsed} model=${ai?.modelName || ''} latencyMs=${Number(ai?.latencyMs || 0)}`);
         const existingRun = await AssessmentAiRun.findOne({ attemptId: attempt._id }).sort({ createdAt: -1 });
         let run;
         if (existingRun) {
@@ -1261,7 +1292,11 @@ app.post('/api/assessments/attempts/:attemptId/retry-ai', async (req, res) => {
             trendSignals: run.trendSignals
         });
     } catch (e) {
-        console.error(e);
+        console.error('[RETRY_AI] failed', {
+            message: e?.message || 'Unknown error',
+            stack: e?.stack || '',
+            attemptId: String(req.params?.attemptId || '')
+        });
         res.status(500).json({ error: 'Server error' });
     }
 });
