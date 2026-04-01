@@ -11,6 +11,7 @@ const mongoose = require('mongoose');
 const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 const fetch = require('node-fetch');
+const { Blob } = require('buffer');
 
 // Compatibility for environments where global Fetch classes are missing (Node < 18).
 if (typeof globalThis.Headers === 'undefined') {
@@ -24,6 +25,15 @@ if (typeof globalThis.Response === 'undefined') {
 }
 if (typeof globalThis.fetch === 'undefined') {
     globalThis.fetch = fetch;
+}
+if (typeof globalThis.Blob === 'undefined') {
+    globalThis.Blob = Blob;
+}
+if (typeof globalThis.FormData === 'undefined' && fetch.FormData) {
+    globalThis.FormData = fetch.FormData;
+}
+if (typeof globalThis.File === 'undefined' && fetch.File) {
+    globalThis.File = fetch.File;
 }
 
 const { google } = require('googleapis');
@@ -48,6 +58,10 @@ const DEFAULT_ADMIN_USERNAME = process.env.DEFAULT_ADMIN_USERNAME || 'hungnq';
 const DEFAULT_ADMIN_PASSWORD = process.env.DEFAULT_ADMIN_PASSWORD || 'HungNQ@1979';
 const HYBRID_AI_PROVIDER = process.env.HYBRID_AI_PROVIDER || 'gemini';
 const GEMINI_API_KEY = String(process.env.GEMINI_API_KEY || '').trim();
+const GEMINI_API_KEYS = String(process.env.GEMINI_API_KEYS || '')
+    .split(',')
+    .map(x => String(x || '').trim())
+    .filter(Boolean);
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const GEMINI_MAX_OUTPUT_TOKENS = Math.max(512, Math.min(8192, parseInt(String(process.env.GEMINI_MAX_OUTPUT_TOKENS || '3072'), 10) || 3072));
 
@@ -710,7 +724,7 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
     const submittedAnswerEvidence = buildSubmittedAnswerEvidence(configQuestions || [], answers || {});
     const evidenceCount = Array.isArray(submittedAnswerEvidence) ? submittedAnswerEvidence.length : 0;
 
-    const apiKey = GEMINI_API_KEY;
+    const apiKeys = Array.from(new Set([GEMINI_API_KEY, ...GEMINI_API_KEYS].filter(Boolean)));
     const model = GEMINI_MODEL;
 
     // Hàm trả về trạng thái lỗi (Điểm về 0, Ngành là "Lỗi AI")
@@ -794,8 +808,8 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
         console.error(`${logPrefix} provider_error provider=${HYBRID_AI_PROVIDER}`);
         return returnErrorState(`Unsupported HYBRID_AI_PROVIDER: ${HYBRID_AI_PROVIDER}`);
     }
-    if (!apiKey) {
-        console.error(`${logPrefix} config_error missing=GEMINI_API_KEY`);
+    if (!apiKeys.length) {
+        console.error(`${logPrefix} config_error missing=GEMINI_API_KEY or GEMINI_API_KEYS`);
         return returnErrorState('Missing GEMINI_API_KEY in environment');
     }
 
@@ -841,14 +855,16 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
 
     try {
         const modelCandidates = [String(model || '').trim()].filter(Boolean);
-        const keySuffix = apiKey ? apiKey.slice(-6) : 'none';
-        console.log(`${logPrefix} start provider=${HYBRID_AI_PROVIDER} models=${modelCandidates.join(',')} keySuffix=***${keySuffix} evidenceCount=${evidenceCount} promptChars=${promptText.length}`);
+        console.log(`${logPrefix} start provider=${HYBRID_AI_PROVIDER} models=${modelCandidates.join(',')} keyCount=${apiKeys.length} evidenceCount=${evidenceCount} promptChars=${promptText.length}`);
         let lastError = null;
+        let leakedKeyDetected = false;
 
-        for (const mdl of modelCandidates) {
-            try {
-                console.log(`${logPrefix} call_model model=${mdl} maxOutputTokens=${GEMINI_MAX_OUTPUT_TOKENS}`);
-                const resp = await fetch(
+        for (const apiKey of apiKeys) {
+            const keySuffix = apiKey.slice(-6);
+            for (const mdl of modelCandidates) {
+                try {
+                    console.log(`${logPrefix} call_model model=${mdl} keySuffix=***${keySuffix} maxOutputTokens=${GEMINI_MAX_OUTPUT_TOKENS}`);
+                    const resp = await fetch(
                     `https://generativelanguage.googleapis.com/v1beta/models/${mdl}:generateContent`,
                     {
                       method: 'POST',
@@ -905,54 +921,64 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
                     }
                   );
 
-                if (!resp.ok) {
-                    const errTxt = await resp.text();
-                    lastError = `Gemini ${mdl} HTTP ${resp.status}: ${errTxt.slice(0, 500)}`;
-                    console.error(`${logPrefix} ${lastError}`);
-                    continue;
-                }
+                    if (!resp.ok) {
+                        const errTxt = await resp.text();
+                        lastError = `Gemini ${mdl} HTTP ${resp.status}: ${errTxt.slice(0, 500)}`;
+                        if (resp.status === 403 && /reported as leaked/i.test(errTxt)) {
+                            leakedKeyDetected = true;
+                            console.error(`${logPrefix} key_blocked keySuffix=***${keySuffix} ${lastError}`);
+                        } else {
+                            console.error(`${logPrefix} ${lastError}`);
+                        }
+                        continue;
+                    }
 
-                const data = await resp.json();
-                const content = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                const finishReason = String(data?.candidates?.[0]?.finishReason || '');
-                const usage = data?.usageMetadata || {};
-                let parsed = extractJsonObject(content);
-                if (!parsed) parsed = tryRecoverJsonObject(content);
-                if (!parsed || !Array.isArray(parsed.suggestedMajors) || parsed.suggestedMajors.length === 0) {
-                    lastError = `Gemini ${mdl} invalid payload`;
-                    console.error(`${logPrefix} ${lastError} finishReason=${finishReason} promptTokens=${usage.promptTokenCount || 0} outputTokens=${usage.candidatesTokenCount || 0} thoughtsTokens=${usage.thoughtsTokenCount || 0} contentLength=${content.length} content=${content ? content.slice(0, 400) : '<empty>'}`);
-                    continue;
-                }
+                    const data = await resp.json();
+                    const content = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                    const finishReason = String(data?.candidates?.[0]?.finishReason || '');
+                    const usage = data?.usageMetadata || {};
+                    let parsed = extractJsonObject(content);
+                    if (!parsed) parsed = tryRecoverJsonObject(content);
+                    if (!parsed || !Array.isArray(parsed.suggestedMajors) || parsed.suggestedMajors.length === 0) {
+                        lastError = `Gemini ${mdl} invalid payload`;
+                        console.error(`${logPrefix} ${lastError} finishReason=${finishReason} promptTokens=${usage.promptTokenCount || 0} outputTokens=${usage.candidatesTokenCount || 0} thoughtsTokens=${usage.thoughtsTokenCount || 0} contentLength=${content.length} content=${content ? content.slice(0, 400) : '<empty>'}`);
+                        continue;
+                    }
 
-                const mapped = parsed.suggestedMajors.map(m => ({
-                    majorName: String(m.majorName || 'Unknown'),
-                    score: Number(m.score || 0),
-                    reasons: Array.isArray(m.reasons) ? m.reasons : [],
-                    matchedSkills: Array.isArray(m.matchedSkills) ? m.matchedSkills : []
-                }));
-                const suggestedMajors = mergeSuggestedMajorsScoresFromBaseline(mapped, baseline);
+                    const mapped = parsed.suggestedMajors.map(m => ({
+                        majorName: String(m.majorName || 'Unknown'),
+                        score: Number(m.score || 0),
+                        reasons: Array.isArray(m.reasons) ? m.reasons : [],
+                        matchedSkills: Array.isArray(m.matchedSkills) ? m.matchedSkills : []
+                    }));
+                    const suggestedMajors = mergeSuggestedMajorsScoresFromBaseline(mapped, baseline);
 
                
                 
 
-                return {
-                    provider: 'gemini',
-                    modelName: mdl,
-                    latencyMs: Date.now() - t0,
-                    fallbackUsed: false,
-                    aiRawResponse: data,
-                    derivedSkillScores,
-                    suggestedMajors,
-                    explanationSummary: String(parsed.explanationSummary || ''),
-                    trendSignals: parsed.trendSignals || { strengths: [], risks: [], marketNote: "" },
-                    promptSnapshot: truncateForPrompt(promptText, 14000)
-                };
-            } catch (innerErr) {
-                lastError = `Gemini ${mdl} exception: ${innerErr.message || innerErr}`;
-                console.error(`${logPrefix} ${lastError}`);
+                    return {
+                        provider: 'gemini',
+                        modelName: mdl,
+                        latencyMs: Date.now() - t0,
+                        fallbackUsed: false,
+                        aiRawResponse: data,
+                        derivedSkillScores,
+                        suggestedMajors,
+                        explanationSummary: String(parsed.explanationSummary || ''),
+                        trendSignals: parsed.trendSignals || { strengths: [], risks: [], marketNote: "" },
+                        promptSnapshot: truncateForPrompt(promptText, 14000)
+                    };
+                } catch (innerErr) {
+                    lastError = `Gemini ${mdl} exception: ${innerErr.message || innerErr}`;
+                    console.error(`${logPrefix} ${lastError}`);
+                }
             }
         }
 
+        if (leakedKeyDetected) {
+            console.error(`${logPrefix} fallback_used reason=gemini_api_key_blocked lastError=${String(lastError || '')}`);
+            return returnErrorState('Gemini API key đã bị khóa (leaked). Vui lòng thay key mới', lastError);
+        }
         console.error(`${logPrefix} fallback_used reason=gemini_unavailable lastError=${String(lastError || '')}`);
         return returnErrorState('Lỗi kết nối Gemini API', lastError);
     } catch (e) {
