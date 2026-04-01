@@ -1501,7 +1501,11 @@ app.post('/api/assessments/attempts-export-sheets', async (req, res) => {
             totalAttempts: attempts.length
         });
     } catch (e) {
-        console.error(e);
+        console.error('[EXPORT_SHEETS] failed', {
+            message: e?.message || 'Unknown error',
+            stack: e?.stack || '',
+            body: req?.body || {}
+        });
         res.status(500).json({
             error: 'Failed to export to Google Sheets',
             detail: e.message || 'Unknown error'
