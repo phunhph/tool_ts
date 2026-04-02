@@ -63,10 +63,13 @@ const DEFAULT_ADMIN_USERNAME = process.env.DEFAULT_ADMIN_USERNAME || 'hungnq';
 const DEFAULT_ADMIN_PASSWORD = process.env.DEFAULT_ADMIN_PASSWORD || 'HungNQ@1979';
 const HYBRID_AI_PROVIDER = process.env.HYBRID_AI_PROVIDER || 'gemini';
 const GEMINI_API_KEY = String(process.env.GEMINI_API_KEY || '').trim();
-const GEMINI_API_KEYS = String(process.env.GEMINI_API_KEYS || '')
-    .split(',')
-    .map(x => String(x || '').trim())
-    .filter(Boolean);
+function parseGeminiApiKeys(raw) {
+    return String(raw || '')
+        .split(/[\n,;]+/g)
+        .map(x => String(x || '').trim())
+        .filter(Boolean);
+}
+const GEMINI_API_KEYS = parseGeminiApiKeys(process.env.GEMINI_API_KEYS);
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const GEMINI_MAX_OUTPUT_TOKENS = Math.max(512, Math.min(8192, parseInt(String(process.env.GEMINI_MAX_OUTPUT_TOKENS || '3072'), 10) || 3072));
 
@@ -702,6 +705,21 @@ function tryRecoverJsonObject(text) {
     try { return JSON.parse(candidate); } catch (_) { return null; }
 }
 
+function shouldRotateGeminiKey(status, errText) {
+    const s = Number(status || 0);
+    const txt = String(errText || '').toLowerCase();
+    if (s === 429) return true; // rate limit / quota
+    if (s === 401) return true; // unauthorized key
+    if (s === 403) {
+        return /leaked|permission_denied|api key|key|quota|rate|resource_exhausted|billing|disabled/.test(txt);
+    }
+    if (s === 400) {
+        // Some invalid-key-like cases can appear as 400 in provider wrappers.
+        return /api key|invalid key|key not valid|permission_denied/.test(txt);
+    }
+    return false;
+}
+
 async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
     const t0 = Date.now();
     const logPrefix = `[HYBRID_AI][quizId=${quizId || '-'}][attemptId=${attemptId ? String(attemptId) : '-'}]`;
@@ -871,6 +889,7 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
 
         for (const apiKey of apiKeys) {
             const keySuffix = apiKey.slice(-6);
+            let rotateToNextKey = false;
             for (const mdl of modelCandidates) {
                 try {
                     console.log(`${logPrefix} call_model model=${mdl} keySuffix=***${keySuffix} maxOutputTokens=${GEMINI_MAX_OUTPUT_TOKENS}`);
@@ -922,7 +941,14 @@ ${promptText}
                         lastError = `Gemini ${mdl} HTTP ${resp.status}: ${errTxt.slice(0, 500)}`;
                         if (resp.status === 403 && /reported as leaked/i.test(errTxt)) {
                             leakedKeyDetected = true;
+                            rotateToNextKey = true;
                             console.error(`${logPrefix} key_blocked keySuffix=***${keySuffix} ${lastError}`);
+                            break;
+                        } else if (shouldRotateGeminiKey(resp.status, errTxt)) {
+                            rotateToNextKey = true;
+                            console.error(`${logPrefix} key_rotate keySuffix=***${keySuffix} status=${resp.status} reason=key_or_quota_issue`);
+                            console.error(`${logPrefix} ${lastError}`);
+                            break;
                         } else {
                             console.error(`${logPrefix} ${lastError}`);
                         }
@@ -999,6 +1025,10 @@ ${promptText}
                     lastError = `Gemini ${mdl} exception: ${innerErr.message || innerErr}`;
                     console.error(`${logPrefix} ${lastError}`);
                 }
+            }
+            if (!rotateToNextKey) {
+                // No key-related issue detected for this key; switching key is unlikely to help.
+                break;
             }
         }
 
