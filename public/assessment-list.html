@@ -216,9 +216,8 @@
                     <thead>
                         <tr>
                             <th data-i18n="assessment_list_col_title">Tên đề</th>
-                            <th>ID</th>
-                            <th data-i18n="assessment_list_col_teacher">Người tạo</th>
                             <th data-i18n="assessment_list_col_created">Ngày tạo</th>
+                            <th data-i18n="assessment_list_col_questions">Số câu hỏi</th>
                             <th data-i18n="assessment_list_col_actions">Thao tác</th>
                         </tr>
                     </thead>
@@ -300,9 +299,8 @@
 
                 tr.innerHTML = `
                     <td data-label="${t('assessment_list_col_title','Tên đề')}"><strong>${it.title}</strong></td>
-                    <td data-label="ID"><code style="background:#f1f5f9; padding:2px 6px; border-radius:4px;">${it.id}</code></td>
-                    <td data-label="${t('assessment_list_col_teacher','Người tạo')}">${it.teacherName}</td>
                     <td data-label="${t('assessment_list_col_created','Ngày tạo')}">${new Date(it.createdAt).toLocaleDateString('vi-VN')}</td>
+                    <td data-label="${t('assessment_list_col_questions','Số câu hỏi')}">${Number(it.questionCount || 0)}</td>
                     <td data-label="${t('assessment_list_col_actions','Thao tác')}">
                         <div class="assessment-actions">
                             <a class="mini-btn mini-primary" data-icon="👁️" title="${t('assessment_list_btn_preview','Xem đề')}" aria-label="${t('assessment_list_btn_preview','Xem đề')}" href="${previewLink}">${t('assessment_list_btn_preview','Xem đề')}</a>

@@ -1650,11 +1650,15 @@ app.get('/api/assessments/quizzes', async (req, res) => {
         const search = String(req.query.search || '').trim();
         const query = { assessmentEnabled: true };
         if (search) {
-            query.quizTitle = { $regex: search, $options: 'i' };
+            query.$or = [
+                { quizTitle: { $regex: search, $options: 'i' } },
+                { title: { $regex: search, $options: 'i' } },
+                { id: { $regex: search, $options: 'i' } }
+            ];
         }
 
         const items = await Quiz.find(query)
-            .select('id quizTitle createdAt teacherName teacherEmail startTime endTime')
+            .select('id quizTitle title createdAt teacherName teacherEmail startTime endTime questions randomCount')
             .sort({ createdAt: -1 })
             .limit(500)
             .lean();
@@ -1664,7 +1668,8 @@ app.get('/api/assessments/quizzes', async (req, res) => {
             total: items.length,
             items: items.map(q => ({
                 id: String(q.id || ''),
-                title: String(q.quizTitle || 'Untitled Assessment'),
+                title: String(q.quizTitle || q.title || 'Untitled Assessment'),
+                questionCount: Array.isArray(q.questions) ? q.questions.length : 0,
                 createdAt: q.createdAt || null,
                 teacherName: String(q.teacherName || ''),
                 teacherEmail: String(q.teacherEmail || ''),
