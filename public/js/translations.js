@@ -141,7 +141,15 @@ const translations = {
         "assessment_list_delete_action": "Delete Quiz",
         "assessment_list_delete_confirm": "Are you sure you want to delete \"{title}\"? This action cannot be undone.",
         "assessment_list_delete_success": "Quiz deleted successfully.",
-        "assessment_list_delete_fail": "Failed to delete quiz."
+        "assessment_list_delete_fail": "Failed to delete quiz.",
+
+        "label_assessment_schools": "School list (students pick when taking the quiz)",
+        "desc_assessment_schools": "At least one school name is required. Use + to add more rows.",
+        "btn_add_school": "Add school",
+        "ph_school_row_name": "School name",
+        "ph_select_student_school": "Select school…",
+        "assessment_filter_all_schools": "All schools",
+        "assessment_filter_school_placeholder": "Filter by school"
     },
     vi: {
         "nav_create": "Tạo Quiz",
@@ -285,12 +293,20 @@ const translations = {
         "assessment_list_delete_action": "Xóa đề",
         "assessment_list_delete_confirm": "Bạn chắc chắn muốn xóa đề \"{title}\"? Hành động không thể hoàn tác.",
         "assessment_list_delete_success": "Đã xóa đề thành công.",
-        "assessment_list_delete_fail": "Xóa đề thất bại."
+        "assessment_list_delete_fail": "Xóa đề thất bại.",
+
+        "label_assessment_schools": "Danh sách trường (thí sinh chọn khi làm bài)",
+        "desc_assessment_schools": "Bắt buộc ít nhất một tên trường. Bấm + để thêm dòng.",
+        "btn_add_school": "Thêm trường",
+        "ph_school_row_name": "Tên trường",
+        "ph_select_student_school": "Chọn trường…",
+        "assessment_filter_all_schools": "Tất cả trường",
+        "assessment_filter_school_placeholder": "Lọc theo trường"
     }
 };
 
 function setLanguage(lang) {
-    if (!translations[lang]) lang = 'en';
+    if (!translations[lang]) lang = 'vi';
     localStorage.setItem('lang', lang);
 
     const elements = document.querySelectorAll('[data-i18n]');
@@ -301,6 +317,8 @@ function setLanguage(lang) {
                 el.placeholder = translations[lang][key];
             } else if (el.tagName === 'IMG' && el.getAttribute('alt')) {
                 el.alt = translations[lang][key];
+            } else if (el.tagName === 'OPTION') {
+                el.textContent = translations[lang][key];
             } else {
                 el.innerHTML = translations[lang][key];
             }
@@ -313,6 +331,6 @@ function setLanguage(lang) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const savedLang = localStorage.getItem('lang') || 'en';
+    const savedLang = localStorage.getItem('lang') || 'vi';
     setLanguage(savedLang);
 });
