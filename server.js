@@ -833,9 +833,9 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
         'Quy tắc bắt buộc:',
         '- Chỉ dùng majorName nằm trong majorsList.',
         '- Mỗi ngành phải có reasons gắn với bằng chứng cụ thể (ưu tiên nêu Q{order}).',
-        '- Không dùng lập luận chung chung áp cho mọi thí sinh.',
+        '- Không dùng lập luận chung chung áp cho mọi thí sinh, lập luận cẩn thận ổn định có sự thuyết phục và có căn cứ thị trường xu hướng.',
         '- Nếu thuộc nhóm CNTT/Kinh doanh/Kỹ thuật, phải ưu tiên trả ngành con cụ thể (ví dụ Web/Mobile/Game/AI...) thay vì tên nhóm chung.',
-        '- Không mặc định "Lập trình Web" nếu bằng chứng không nghiêng về CNTT.',
+        '- Không được lấy mặc định một chuyên ngành nào cả cần phải có căn cứ tư input là các câu hỏi, cũng như phán đoán thị trường để đưa ra các gợi ý chuyên ngành phù hợp.',
         '- Bỏ qua mọi ngành "(dự kiến)" hoặc chưa tuyển sinh ổn định.',
         '- Score phải có phân hạng rõ; tránh 90/90/90 nếu không có bằng chứng tương đương.',
         '- Nếu bằng chứng chưa đủ: suggestedMajors=[], explanationSummary nêu rõ "chưa đủ tín hiệu từ bài làm".',
@@ -874,6 +874,23 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
             for (const mdl of modelCandidates) {
                 try {
                     console.log(`${logPrefix} call_model model=${mdl} keySuffix=***${keySuffix} maxOutputTokens=${GEMINI_MAX_OUTPUT_TOKENS}`);
+                    const generationConfig = {
+                        temperature: 0.45,
+                        maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS
+                    };
+                    const isGemmaFamily = /gemma/i.test(String(mdl || ''));
+                    const jsonModeAllowed = !isGemmaFamily;
+                    const thinkingAllowed = !isGemmaFamily;
+                    if (jsonModeAllowed) {
+                        generationConfig.responseMimeType = 'application/json';
+                    } else {
+                        console.log(`${logPrefix} model=${mdl} json_mode=off reason=unsupported_or_unstable`);
+                    }
+                    if (thinkingAllowed) {
+                        generationConfig.thinkingConfig = { thinkingBudget: 0 };
+                    } else {
+                        console.log(`${logPrefix} model=${mdl} thinking=off reason=unsupported_or_unstable`);
+                    }
                     const resp = await fetch(
                     `https://generativelanguage.googleapis.com/v1beta/models/${mdl}:generateContent`,
                     {
@@ -895,14 +912,7 @@ ${promptText}
                             }]
                           }
                         ],
-                        generationConfig: {
-                            temperature: 0.45,
-                            maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS,
-                            thinkingConfig: {
-                              thinkingBudget: 0
-                            },
-                            responseMimeType: 'application/json'
-                          }
+                        generationConfig
                       })
                     }
                   );
@@ -937,7 +947,38 @@ ${promptText}
                         reasons: Array.isArray(m.reasons) ? m.reasons : [],
                         matchedSkills: Array.isArray(m.matchedSkills) ? m.matchedSkills : []
                     }));
-                    const suggestedMajors = mergeSuggestedMajorsScoresFromBaseline(mapped, baseline);
+                    let suggestedMajors = mergeSuggestedMajorsScoresFromBaseline(mapped, baseline);
+                    // Some lightweight models return too few majors; backfill from baseline to keep dashboard informative.
+                    if (suggestedMajors.length < 3) {
+                        const existing = new Set(suggestedMajors.map(x => String(x.majorName || '')));
+                        for (const b of baseline) {
+                            const name = String(b.majorName || '');
+                            if (!name || existing.has(name)) continue;
+                            suggestedMajors.push({
+                                majorName: name,
+                                score: Number(b.score || 0),
+                                reasons: Array.isArray(b.reasons) ? b.reasons : [],
+                                matchedSkills: Array.isArray(b.matchedSkills) ? b.matchedSkills : []
+                            });
+                            existing.add(name);
+                            if (suggestedMajors.length >= 3) break;
+                        }
+                    }
+                    suggestedMajors = suggestedMajors
+                        .sort((a, b) => Number(b.score || 0) - Number(a.score || 0))
+                        .slice(0, 3);
+
+                    const aiTrend = parsed.trendSignals || {};
+                    const fallbackTrend = buildProfessionalFallbackNarrative(derivedSkillScores, suggestedMajors);
+                    const trendSignals = {
+                        strengths: Array.isArray(aiTrend.strengths) && aiTrend.strengths.length
+                            ? aiTrend.strengths
+                            : (fallbackTrend.strengths || []),
+                        risks: Array.isArray(aiTrend.risks) && aiTrend.risks.length
+                            ? aiTrend.risks
+                            : (fallbackTrend.risks || []),
+                        marketNote: String(aiTrend.marketNote || '').trim() || String(fallbackTrend.marketNote || '')
+                    };
 
                
                 
@@ -951,7 +992,7 @@ ${promptText}
                         derivedSkillScores,
                         suggestedMajors,
                         explanationSummary: String(parsed.explanationSummary || ''),
-                        trendSignals: parsed.trendSignals || { strengths: [], risks: [], marketNote: "" },
+                        trendSignals,
                         promptSnapshot: truncateForPrompt(promptText, 14000)
                     };
                 } catch (innerErr) {
