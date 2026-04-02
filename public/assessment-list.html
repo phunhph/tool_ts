@@ -101,6 +101,21 @@
         }
         .btn-secondary { background: #e2e8f0; color: #475569; }
         .btn-secondary:hover { background: #cbd5e1; }
+        #deleteConfirmBtn {
+            background: #dc2626 !important;
+            color: #ffffff !important;
+            border: 1px solid #dc2626 !important;
+            min-width: 110px;
+        }
+        #deleteConfirmBtn:hover {
+            background: #b91c1c !important;
+            border-color: #b91c1c !important;
+            color: #ffffff !important;
+        }
+        #deleteConfirmBtn:disabled {
+            opacity: 0.75;
+            cursor: not-allowed;
+        }
 
         .mini-btn {
             padding: 6px 12px;
@@ -117,7 +132,8 @@
         .mini-success { background: #ecfdf5; color: var(--success); }
         .mini-success:hover { background: var(--success); color: #fff; }
         .mini-danger { background: #fef2f2; color: var(--danger); }
-        .mini-danger:hover { background: var(--danger); color: #fff; }
+        .mini-danger:hover { background: #dc2626; color: #ffffff; }
+        .mini-danger:focus-visible { outline: 2px solid #dc2626; outline-offset: 2px; }
         .assessment-actions { display: flex; gap: 8px; }
 
         /* RESPONSIVE: Table to Cards */
@@ -218,6 +234,7 @@
                             <th data-i18n="assessment_list_col_title">Tên đề</th>
                             <th data-i18n="assessment_list_col_created">Ngày tạo</th>
                             <th data-i18n="assessment_list_col_questions">Số câu hỏi</th>
+                            <th data-i18n="assessment_list_col_attempts">Số bài thi</th>
                             <th data-i18n="assessment_list_col_actions">Thao tác</th>
                         </tr>
                     </thead>
@@ -273,6 +290,12 @@
             setTimeout(() => { toastMsg.style.display = 'none'; }, 3000);
         }
 
+        function escJs(value) {
+            return String(value || '')
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'");
+        }
+
         async function fetchAssessments() {
             const qs = new URLSearchParams();
             const search = String(searchInput.value || '').trim();
@@ -301,11 +324,12 @@
                     <td data-label="${t('assessment_list_col_title','Tên đề')}"><strong>${it.title}</strong></td>
                     <td data-label="${t('assessment_list_col_created','Ngày tạo')}">${new Date(it.createdAt).toLocaleDateString('vi-VN')}</td>
                     <td data-label="${t('assessment_list_col_questions','Số câu hỏi')}">${Number(it.questionCount || 0)}</td>
+                    <td data-label="${t('assessment_list_col_attempts','Số bài thi')}">${Number(it.attemptCount || 0)}</td>
                     <td data-label="${t('assessment_list_col_actions','Thao tác')}">
                         <div class="assessment-actions">
                             <a class="mini-btn mini-primary" data-icon="👁️" title="${t('assessment_list_btn_preview','Xem đề')}" aria-label="${t('assessment_list_btn_preview','Xem đề')}" href="${previewLink}">${t('assessment_list_btn_preview','Xem đề')}</a>
                             <a class="mini-btn mini-success" data-icon="📝" title="${t('assessment_list_btn_take','Vào thi')}" aria-label="${t('assessment_list_btn_take','Vào thi')}" href="${studentLink}">${t('assessment_list_btn_take','Vào thi')}</a>
-                            <button class="mini-btn mini-danger" data-icon="🗑️" title="${t('assessment_list_btn_delete','Xóa đề')}" aria-label="${t('assessment_list_btn_delete','Xóa đề')}" onclick="openDeleteModal('${it.id}', '${it.title}')">${t('assessment_list_btn_delete','Xóa đề')}</button>
+                            <button class="mini-btn mini-danger" data-icon="🗑️" title="${t('assessment_list_btn_delete','Xóa đề')}" aria-label="${t('assessment_list_btn_delete','Xóa đề')}" onclick="openDeleteModal('${escJs(it.id)}', '${escJs(it.title)}')">${t('assessment_list_btn_delete','Xóa đề')}</button>
                         </div>
                     </td>
                 `;
@@ -316,10 +340,48 @@
         function openDeleteModal(id, title) {
             deletingQuizId = id;
             document.getElementById('deleteModalDesc').textContent = t('assessment_list_delete_confirm','Bạn chắc chắn muốn xóa đề "{title}"? Hành động không thể hoàn tác.').replace('{title}', title);
+            deletePasswordInput.value = '';
             deleteModal.style.display = 'flex';
         }
 
-        document.getElementById('deleteCancelBtn').onclick = () => deleteModal.style.display = 'none';
+        function closeDeleteModal() {
+            deleteModal.style.display = 'none';
+            deletingQuizId = '';
+            deletePasswordInput.value = '';
+        }
+
+        document.getElementById('deleteCancelBtn').onclick = closeDeleteModal;
+        deleteModal.addEventListener('click', (e) => {
+            if (e.target === deleteModal) closeDeleteModal();
+        });
+
+        document.getElementById('deleteConfirmBtn').onclick = async () => {
+            const quizId = String(deletingQuizId || '').trim();
+            if (!quizId) return;
+            const btn = document.getElementById('deleteConfirmBtn');
+            const oldText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '...';
+            try {
+                const resp = await fetch(`/api/quiz/${encodeURIComponent(quizId)}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: String(deletePasswordInput.value || '') })
+                });
+                const payload = await resp.json().catch(() => ({}));
+                if (!resp.ok || !payload?.success) {
+                    throw new Error(payload?.error || t('assessment_list_delete_fail', 'Xóa đề thất bại.'));
+                }
+                closeDeleteModal();
+                showToast(t('assessment_list_delete_success', 'Đã xóa đề thành công.'));
+                await loadList();
+            } catch (e) {
+                showToast(e.message || t('assessment_list_delete_fail', 'Xóa đề thất bại.'), true);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = oldText;
+            }
+        };
 
         // Khởi tạo tải dữ liệu
         async function loadList() {

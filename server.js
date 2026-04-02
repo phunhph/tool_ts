@@ -1662,6 +1662,16 @@ app.get('/api/assessments/quizzes', async (req, res) => {
             .sort({ createdAt: -1 })
             .limit(500)
             .lean();
+        const quizIds = items.map(q => String(q.id || '')).filter(Boolean);
+        const attemptAgg = quizIds.length
+            ? await AssessmentAttempt.aggregate([
+                { $match: { quizId: { $in: quizIds } } },
+                { $group: { _id: '$quizId', count: { $sum: 1 } } }
+            ])
+            : [];
+        const attemptCountByQuizId = new Map(
+            attemptAgg.map(x => [String(x._id || ''), Number(x.count || 0)])
+        );
 
         res.json({
             success: true,
@@ -1670,6 +1680,7 @@ app.get('/api/assessments/quizzes', async (req, res) => {
                 id: String(q.id || ''),
                 title: String(q.quizTitle || q.title || 'Untitled Assessment'),
                 questionCount: Array.isArray(q.questions) ? q.questions.length : 0,
+                attemptCount: attemptCountByQuizId.get(String(q.id || '')) || 0,
                 createdAt: q.createdAt || null,
                 teacherName: String(q.teacherName || ''),
                 teacherEmail: String(q.teacherEmail || ''),
