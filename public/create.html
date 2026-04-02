@@ -723,6 +723,18 @@
                         </label>
                     </div>
                 </div>
+                <div id="assessmentSchoolsSection" style="display: none; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333;" data-i18n="label_assessment_schools">
+                        Danh sách trường (thí sinh chọn khi làm bài)
+                    </label>
+                    <p style="font-size: 0.88rem; color: #64748b; margin-bottom: 0.75rem;" data-i18n="desc_assessment_schools">
+                        Bắt buộc ít nhất một tên trường. Bấm + để thêm dòng.
+                    </p>
+                    <div id="assessmentSchoolsList" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                    <button type="button" id="addSchoolRowBtn" class="btn-secondary" style="margin-top: 10px; padding: 8px 14px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; cursor: pointer; font-weight: 600;">
+                        + <span data-i18n="btn_add_school">Thêm trường</span>
+                    </button>
+                </div>
             </div>
 
             <!-- Upload Banks -->
@@ -849,7 +861,7 @@
 
 
 
-    <script src="js/translations.js?v=1.1"></script>
+    <script src="js/translations.js?v=1.2"></script>
     <script>
         const form = document.getElementById('uploadForm');
         const resultDiv = document.getElementById('result');
@@ -861,8 +873,87 @@
         const randomCountInput = document.getElementById('randomCount');
         const addBankBtn = document.getElementById('addBankBtn');
         const banksContainer = document.getElementById('banksContainer');
+        const assessmentSchoolsSection = document.getElementById('assessmentSchoolsSection');
+        const assessmentSchoolsList = document.getElementById('assessmentSchoolsList');
+        const addSchoolRowBtn = document.getElementById('addSchoolRowBtn');
 
         let bankCounter = 1;
+
+        function renumberSchoolRows() {
+            const rows = assessmentSchoolsList.querySelectorAll('.assessment-school-row');
+            rows.forEach((row, i) => {
+                const badge = row.querySelector('.school-order-num');
+                if (badge) badge.textContent = String(i + 1);
+                const btn = row.querySelector('.btn-remove-school-row');
+                if (btn) btn.style.display = rows.length > 1 ? 'inline-flex' : 'none';
+            });
+        }
+
+        function addSchoolRow(name) {
+            const row = document.createElement('div');
+            row.className = 'assessment-school-row';
+            row.style.cssText = 'display:flex; align-items:center; gap:10px;';
+            const badge = document.createElement('span');
+            badge.className = 'school-order-num';
+            badge.style.cssText = 'display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:28px; border-radius:50%; background:#e0e7ff; color:#3730a3; font-weight:700; font-size:0.85rem; flex-shrink:0;';
+            const inp = document.createElement('input');
+            inp.type = 'text';
+            inp.className = 'school-name-input';
+            inp.setAttribute('data-i18n', 'ph_school_row_name');
+            inp.style.cssText = 'flex:1; min-width:0; padding:0.65rem 0.85rem; border:1px solid #ddd; border-radius:8px;';
+            if (name) inp.value = name;
+            const rm = document.createElement('button');
+            rm.type = 'button';
+            rm.className = 'btn-remove-school-row';
+            rm.setAttribute('aria-label', 'Remove');
+            rm.style.cssText = 'display:none; width:32px; height:32px; align-items:center; justify-content:center; border:1px solid #fecaca; background:#fef2f2; color:#991b1b; border-radius:8px; cursor:pointer; font-size:1.1rem; line-height:1; flex-shrink:0;';
+            rm.innerHTML = '&times;';
+            row.appendChild(badge);
+            row.appendChild(inp);
+            row.appendChild(rm);
+            assessmentSchoolsList.appendChild(row);
+            renumberSchoolRows();
+            if (typeof setLanguage === 'function') setLanguage(localStorage.getItem('lang') || 'vi');
+        }
+
+        function initAssessmentSchoolRows() {
+            assessmentSchoolsList.innerHTML = '';
+            addSchoolRow('');
+        }
+
+        assessmentSchoolsList.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-remove-school-row');
+            if (!btn) return;
+            const row = btn.closest('.assessment-school-row');
+            if (!row || assessmentSchoolsList.querySelectorAll('.assessment-school-row').length <= 1) return;
+            row.remove();
+            renumberSchoolRows();
+        });
+
+        addSchoolRowBtn.addEventListener('click', () => addSchoolRow(''));
+
+        function toggleAssessmentSchoolsSection() {
+            const oc = document.querySelector('input[name="optionsCount"]:checked');
+            assessmentSchoolsSection.style.display = oc && oc.value === '101' ? 'block' : 'none';
+        }
+
+        document.querySelectorAll('input[name="optionsCount"]').forEach(r => {
+            r.addEventListener('change', toggleAssessmentSchoolsSection);
+        });
+
+        function getAssessmentSchoolsPayload() {
+            const inputs = assessmentSchoolsList.querySelectorAll('.school-name-input');
+            const arr = [];
+            let order = 1;
+            inputs.forEach(inp => {
+                const n = (inp.value || '').trim();
+                if (n) arr.push({ order: order++, name: n });
+            });
+            return arr;
+        }
+
+        initAssessmentSchoolRows();
+        toggleAssessmentSchoolsSection();
 
         addBankBtn.addEventListener('click', () => {
             bankCounter++;
@@ -979,8 +1070,19 @@
             if (questionMode === 'random') {
                 const randomCountVal = document.getElementById('randomCount').value;
                 if (!randomCountVal || parseInt(randomCountVal, 10) < 1) {
-                    const lang = localStorage.getItem('lang') || 'en';
+                    const lang = localStorage.getItem('lang') || 'vi';
                     alert(lang === 'vi' ? 'Vui lòng nhập số câu hỏi random (ít nhất 1).' : 'Please enter the number of random questions (at least 1).');
+                    return;
+                }
+            }
+
+            const optionsCountChecked = document.querySelector('input[name="optionsCount"]:checked');
+            if (optionsCountChecked && optionsCountChecked.value === '101') {
+                if (getAssessmentSchoolsPayload().length === 0) {
+                    const lang = localStorage.getItem('lang') || 'vi';
+                    alert(lang === 'vi'
+                        ? 'Đề Giải mã ngành học cần có ít nhất một tên trường trong danh sách trường.'
+                        : 'Career Mapping quizzes require at least one school name in the school list.');
                     return;
                 }
             }
@@ -997,8 +1099,10 @@
             const modeChecked = document.querySelector('input[name="questionMode"]:checked');
             if (modeChecked) formData.append('questionMode', modeChecked.value);
 
-            const optionsCountChecked = document.querySelector('input[name="optionsCount"]:checked');
             if (optionsCountChecked) formData.append('optionsCount', optionsCountChecked.value);
+            if (optionsCountChecked && optionsCountChecked.value === '101') {
+                formData.append('assessmentSchools', JSON.stringify(getAssessmentSchoolsPayload()));
+            }
 
             const macChecked = document.getElementById('collectMAC').checked;
             formData.append('collectMAC', macChecked);
@@ -1058,6 +1162,8 @@
 
                     form.reset();
                     toggleRandomCount(); // ẩn ô số câu random sau khi reset về option "tất cả"
+                    initAssessmentSchoolRows();
+                    toggleAssessmentSchoolsSection();
 
                     // Save to history
                     saveQuizToHistory(data.quizId, qTitle, studentUrl, teacherUrl, resultsUrl, new Date().toLocaleString());
@@ -1115,7 +1221,7 @@
             if (history.length === 0) {
                 listContainer.innerHTML = '<p style="text-align: center; color: #666;" data-i18n="msg_no_history">No quizzes created yet.</p>';
                 // Re-apply translations for static text if needed, simplest is to let normal loading handle it, but since dynamic:
-                const lang = localStorage.getItem('lang') || 'en';
+                const lang = localStorage.getItem('lang') || 'vi';
                 if (lang === 'vi') listContainer.innerHTML = '<p style="text-align: center; color: #666;">Chưa có bài quiz nào được tạo.</p>';
                 return;
             }

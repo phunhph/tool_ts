@@ -30,7 +30,12 @@ const quizSchema = new mongoose.Schema({
     allowedIPs: { type: [String], default: [] },
     collectMAC: { type: Boolean, default: false },
     assessmentEnabled: { type: Boolean, default: false },
-    assessmentConfigVersion: { type: Number, default: null }
+    assessmentConfigVersion: { type: Number, default: null },
+    /** Ordered school names for assessment quizzes (student select + export filter) */
+    assessmentSchools: [{
+        order: { type: Number, default: 1 },
+        name: { type: String, required: true }
+    }]
 });
 
 module.exports = mongoose.model('Quiz', quizSchema);

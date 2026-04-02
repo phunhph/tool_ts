@@ -187,7 +187,8 @@
         <div id="attemptListError" style="display:none; margin-bottom: 12px; padding: 10px 12px; background:#fef2f2; color:#991b1b; border:1px solid #fecaca; border-radius:10px;">
             Không tải được dữ liệu. Vui lòng thử lại.
         </div>
-        <div style="display:flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
+        <div style="display:flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; align-items: center;">
+            <div id="attemptListSchoolFilterWrap"></div>
             <button id="exportAttemptsBtn" style="padding: 10px 14px; border: 0; border-radius: 10px; background: var(--primary); color: #fff; font-weight: 700; cursor: pointer;">
                 Đồng bộ Google Sheets
             </button>
@@ -202,6 +203,7 @@
                         <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Họ và tên</th>
                         <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Số điện thoại</th>
                         <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Email</th>
+                        <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Trường</th>
                         <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Trạng thái AI</th>
                         <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Ngành gợi ý</th>
                         <th id="retryAiColTh" style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb; display:none;">Thao tác</th>
@@ -251,9 +253,75 @@
     </div>
 </div>
 
+<script src="js/translations.js?v=1.2"></script>
 <script>
     let lastAttemptListItems = [];
     let currentAttemptId = '';
+
+    function getSchoolFilterValue() {
+        const sel = document.getElementById('schoolFilterSelect');
+        if (sel) return (sel.value || '').trim();
+        const inp = document.getElementById('schoolFilterFree');
+        if (inp) return (inp.value || '').trim();
+        return '';
+    }
+
+    function tResult(key) {
+        const lang = localStorage.getItem('lang') || 'vi';
+        const tr = typeof translations !== 'undefined' ? translations[lang] : null;
+        if (tr && tr[key]) return tr[key];
+        const en = typeof translations !== 'undefined' ? translations.en : null;
+        return (en && en[key]) ? en[key] : key;
+    }
+
+    function setupSchoolFilter(quiz) {
+        const wrap = document.getElementById('attemptListSchoolFilterWrap');
+        if (!wrap) return;
+        wrap.innerHTML = '';
+        const schools = Array.isArray(quiz?.assessmentSchools)
+            ? quiz.assessmentSchools.filter(s => s && String(s.name || '').trim())
+            : [];
+        schools.sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+
+        const onFilterChange = async () => {
+            try {
+                const items = await loadAttemptList();
+                renderAttemptList(items || []);
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
+        if (schools.length) {
+            const sel = document.createElement('select');
+            sel.id = 'schoolFilterSelect';
+            sel.style.cssText = 'padding:8px 12px; border-radius:8px; border:1px solid #e5e7eb; min-width:200px; font-weight:600;';
+            const o0 = document.createElement('option');
+            o0.value = '';
+            o0.textContent = tResult('assessment_filter_all_schools');
+            sel.appendChild(o0);
+            schools.forEach(s => {
+                const o = document.createElement('option');
+                o.value = String(s.name).trim();
+                o.textContent = String(s.name).trim();
+                sel.appendChild(o);
+            });
+            sel.addEventListener('change', onFilterChange);
+            wrap.appendChild(sel);
+        } else {
+            const inp = document.createElement('input');
+            inp.type = 'text';
+            inp.id = 'schoolFilterFree';
+            inp.placeholder = tResult('assessment_filter_school_placeholder');
+            inp.style.cssText = 'padding:8px 12px; border-radius:8px; border:1px solid #e5e7eb; min-width:200px;';
+            let t;
+            inp.addEventListener('input', () => {
+                clearTimeout(t);
+                t = setTimeout(onFilterChange, 350);
+            });
+            wrap.appendChild(inp);
+        }
+    }
 
     function esc(s) {
         return String(s ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
@@ -447,7 +515,7 @@
         if (!lastAttemptListItems.length) {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td colspan="${hasAnyAiError ? 6 : 5}" style="padding: 14px; color: var(--secondary); border-bottom: 1px solid #f1f5f9;">
+                <td colspan="${hasAnyAiError ? 7 : 6}" style="padding: 14px; color: var(--secondary); border-bottom: 1px solid #f1f5f9;">
                     Chưa có dữ liệu thí sinh.
                 </td>
             `;
@@ -464,6 +532,7 @@
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${esc(it.studentName || '')}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${esc(it.studentPhone || '')}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${esc(it.studentEmail || '')}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; max-width: 220px;">${esc(it.studentSchool || '')}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; font-weight:600; color:${isAiError ? '#b91c1c' : '#047857'};">${aiStatusLabel}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${esc(topMajorName)}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; ${hasAnyAiError ? '' : 'display:none;'}">
@@ -519,10 +588,13 @@
                 exportBtn.disabled = true;
                 exportBtn.textContent = 'Đang đồng bộ...';
                 try {
+                    const exportBody = { quizId, email, limit: 2000 };
+                    const sf = getSchoolFilterValue();
+                    if (sf) exportBody.school = sf;
                     const resp = await fetch('/api/assessments/attempts-export-sheets', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ quizId, email, limit: 2000 })
+                        body: JSON.stringify(exportBody)
                     });
                     const payload = await resp.json().catch(() => ({}));
                     if (!resp.ok) throw new Error(payload?.detail || payload?.error || 'Sync failed');
@@ -566,6 +638,15 @@
 
             // If no attemptId -> show list (by quizId if provided, otherwise latest attempts)
             if (!attemptId) {
+                const qid = urlParams.get('quizId') || urlParams.get('id');
+                let quizForFilter = null;
+                if (qid) {
+                    try {
+                        const qr = await fetch(`/api/quiz/${encodeURIComponent(qid)}`);
+                        if (qr.ok) quizForFilter = await qr.json();
+                    } catch (_) {}
+                }
+                setupSchoolFilter(quizForFilter);
                 const items = await loadAttemptList();
                 document.querySelector('.dashboard-grid').style.display = 'none';
                 renderAttemptList(items || []);
@@ -579,6 +660,7 @@
 
         // fallback (no attemptId)
         document.querySelector('.dashboard-grid').style.display = 'none';
+        setupSchoolFilter(null);
         renderAttemptList([]);
     };
 </script>

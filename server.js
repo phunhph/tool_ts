@@ -232,6 +232,36 @@ app.post('/api/upload', upload.any(), async (req, res) => {
 
         const collectMAC = req.body.collectMAC === 'true' || req.body.collectMAC === true;
 
+        function parseAssessmentSchoolsFromBody(body) {
+            let raw = body?.assessmentSchools;
+            if (raw === undefined || raw === null || raw === '') return [];
+            if (typeof raw === 'string') {
+                try {
+                    raw = JSON.parse(raw);
+                } catch (_) {
+                    return [];
+                }
+            }
+            if (!Array.isArray(raw)) return [];
+            return raw
+                .map((x, i) => {
+                    if (typeof x === 'string') return { order: i + 1, name: String(x).trim() };
+                    const name = String(x?.name || '').trim();
+                    const order = Number(x?.order);
+                    return { order: Number.isFinite(order) ? order : i + 1, name };
+                })
+                .filter(x => x.name.length > 0)
+                .sort((a, b) => a.order - b.order)
+                .map((x, i) => ({ order: i + 1, name: x.name }));
+        }
+        const assessmentSchools = optionsCount === 101 ? parseAssessmentSchoolsFromBody(req.body) : [];
+
+        if (optionsCount === 101 && assessmentSchools.length === 0) {
+            return res.status(400).json({
+                error: 'Career Mapping mode requires at least one school name in the school list.'
+            });
+        }
+
         let finalQuestions = [];
         let globalQuestionId = 1;
         let assessmentQuestions = [];
@@ -345,7 +375,8 @@ app.post('/api/upload', upload.any(), async (req, res) => {
             allowedIPs: allowedIPs,
             collectMAC: collectMAC,
             assessmentEnabled: optionsCount === 101 || assessmentQuestions.length > 0,
-            assessmentConfigVersion: null
+            assessmentConfigVersion: null,
+            assessmentSchools: assessmentSchools.length ? assessmentSchools : []
         });
 
         res.json({ success: true, quizId: quizId, message: 'Quiz created successfully' });
@@ -1396,12 +1427,14 @@ app.get('/api/assessments/attempts', async (req, res) => {
     try {
         const quizId = req.query.quizId ? String(req.query.quizId).trim() : '';
         const email = req.query.email ? String(req.query.email).trim() : '';
+        const school = req.query.school ? String(req.query.school).trim() : '';
         const limit = Math.max(1, Math.min(200, parseInt(String(req.query.limit || '50'), 10) || 50));
         const skip = Math.max(0, parseInt(String(req.query.skip || '0'), 10) || 0);
 
         const q = {};
         if (quizId) q.quizId = quizId;
         if (email) q.studentEmail = email;
+        if (school) q.studentSchool = school;
 
         const attempts = await AssessmentAttempt.find(q)
             .sort({ submittedAt: -1 })
@@ -1424,6 +1457,7 @@ app.get('/api/assessments/attempts', async (req, res) => {
                 classCode: a.classCode || '',
                 subjectCode: a.subjectCode || '',
                 studentEmail: a.studentEmail || '',
+                studentSchool: a.studentSchool || '',
                 submittedAt: a.submittedAt,
                 clientMeta: a.clientMeta || {},
                 topMajor: top ? { majorName: top.majorName, score: top.score } : null,
@@ -1522,11 +1556,13 @@ app.get('/api/assessments/attempts-export', async (req, res) => {
     try {
         const quizId = req.query.quizId ? String(req.query.quizId).trim() : '';
         const email = req.query.email ? String(req.query.email).trim() : '';
+        const school = req.query.school ? String(req.query.school).trim() : '';
         const limit = Math.max(1, Math.min(2000, parseInt(String(req.query.limit || '2000'), 10) || 2000));
 
         const q = {};
         if (quizId) q.quizId = quizId;
         if (email) q.studentEmail = email;
+        if (school) q.studentSchool = school;
 
         const attempts = await AssessmentAttempt.find(q)
             .sort({ submittedAt: -1 })
@@ -1581,11 +1617,13 @@ app.post('/api/assessments/attempts-export-sheets', async (req, res) => {
     try {
         const quizId = req.body?.quizId ? String(req.body.quizId).trim() : '';
         const email = req.body?.email ? String(req.body.email).trim() : '';
+        const school = req.body?.school ? String(req.body.school).trim() : '';
         const limit = Math.max(1, Math.min(2000, parseInt(String(req.body?.limit || '2000'), 10) || 2000));
 
         const q = {};
         if (quizId) q.quizId = quizId;
         if (email) q.studentEmail = email;
+        if (school) q.studentSchool = school;
 
         const attempts = await AssessmentAttempt.find(q)
             .sort({ submittedAt: -1 })

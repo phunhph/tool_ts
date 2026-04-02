@@ -332,7 +332,7 @@
                     <input type="text" id="studentAddress" placeholder="Enter your address" data-i18n="ph_student_address"
                         required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;">
                 </div>
-                <div class="full">
+                <div class="full" id="studentSchoolFieldWrap">
                     <label for="studentSchool" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
                         <span data-i18n="label_student_school">School (High school)</span>
                         <span style="color: red;">*</span>
@@ -387,7 +387,7 @@
     
 
     
-<script src="js/translations.js?v=1.1"></script>
+<script src="js/translations.js?v=1.2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.11/beautify.min.js"></script>
@@ -472,6 +472,51 @@
         let currentQuiz = null;
         let quizIdForStorage = null;
 
+        function configureStudentSchoolField(quiz) {
+            const wrap = document.getElementById('studentSchoolFieldWrap');
+            if (!wrap) return;
+            const schools = Array.isArray(quiz.assessmentSchools)
+                ? quiz.assessmentSchools.filter(s => s && String(s.name || '').trim())
+                : [];
+            schools.sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+
+            let el = document.getElementById('studentSchool');
+            if (schools.length > 0) {
+                const sel = document.createElement('select');
+                sel.id = 'studentSchool';
+                sel.required = true;
+                sel.style.cssText = 'width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;';
+                const opt0 = document.createElement('option');
+                opt0.value = '';
+                opt0.disabled = true;
+                opt0.selected = true;
+                opt0.setAttribute('data-i18n', 'ph_select_student_school');
+                opt0.textContent = '';
+                sel.appendChild(opt0);
+                schools.forEach(s => {
+                    const o = document.createElement('option');
+                    o.value = String(s.name).trim();
+                    o.textContent = String(s.name).trim();
+                    sel.appendChild(o);
+                });
+                if (el) el.replaceWith(sel);
+                else wrap.appendChild(sel);
+            } else {
+                const inp = document.createElement('input');
+                inp.type = 'text';
+                inp.id = 'studentSchool';
+                inp.required = true;
+                inp.setAttribute('data-i18n', 'ph_student_school');
+                inp.style.cssText = 'width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;';
+                const lang = localStorage.getItem('lang') || 'vi';
+                if (typeof translations !== 'undefined' && translations[lang] && translations[lang].ph_student_school) {
+                    inp.placeholder = translations[lang].ph_student_school;
+                }
+                if (el) el.replaceWith(inp);
+                else wrap.appendChild(inp);
+            }
+        }
+
         async function loadQuiz() {
             const urlParams = new URLSearchParams(window.location.search);
             const quizId = urlParams.get('id');
@@ -489,6 +534,8 @@
                 const quiz = await response.json();
                 currentQuiz = quiz;
                 renderQuiz(quiz);
+                configureStudentSchoolField(quiz);
+                if (typeof setLanguage === 'function') setLanguage(localStorage.getItem('lang') || 'vi');
                 restoreQuizState(); // Restore state after rendering
                 attachAutoSave();   // Attach listeners for auto-save
             } catch (error) {
@@ -948,9 +995,12 @@
         }
 
         function attachAutoSave() {
-            // Attach to student inputs
+            // Attach to student inputs (change covers <select> for school)
             ['studentName', 'studentPhone', 'studentEmail', 'studentDob', 'studentAddress', 'studentSchool'].forEach(id => {
-                document.getElementById(id).addEventListener('input', saveQuizState);
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.addEventListener('input', saveQuizState);
+                el.addEventListener('change', saveQuizState);
             });
 
             // Attach to radio inputs via delegation on container
