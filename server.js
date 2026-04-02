@@ -602,63 +602,48 @@ function baselineMajorsFromSkills(skillScores) {
         'Lập trình Game',
         'Phát triển Phần mềm',
         'Lập trình Ứng dụng Trí tuệ nhân tạo (AI)',
-        'Xử lý Dữ liệu',
-        'Thiết kế Đồ hoạ',
-        'Quản trị Kinh doanh - Digital Marketing',
-        'Quản trị Kinh doanh - Marketing & Sales',
-        'Quản trị Kinh doanh - Truyền thông & Tổ chức sự kiện',
-        'Công nghệ Kỹ thuật Điện',
-        'Công nghệ Kỹ thuật Điện tử',
-        'Công nghệ Kỹ thuật Điều khiển & Tự động hoá',
-        'Công nghệ Chip Bán dẫn',
-        'Quản trị Du lịch',
-        'Lữ hành',
-        'Quản trị Khách sạn',
-        'Quản trị Vận tải Logistics',
-        'Công nghệ Kỹ thuật Cơ khí',
-        'Ngôn ngữ Trung',
-        'Ngôn ngữ Hàn',
-        'Ngôn ngữ Anh',
-        'Ngôn ngữ Nhật',
+        'Ứng dụng phần mềm',
+        'Quản trị kinh doanh - Digital Marketing',
+        'Quản trị kinh doanh - Marketing & Sales',
+        'Quản trị kinh doanh - Truyền thông & Tổ chức sự kiện',
+        'Quản trị dịch vụ du lịch và lữ hành',
+        'Quản trị khách sạn nhà hàng',
+        'Quản lý vận tải và dịch vụ logistics',
+        'Công nghệ kỹ thuật điện, điện tử',
+        'CN kỹ thuật điều khiển & tự động hoá',
+        'Công nghệ Chip & Bán dẫn',
+        'Thiết kế đồ hoạ',
+        'Công nghệ kỹ thuật cơ khí',
+        'Tiếng Trung Quốc',
+        'Tiếng Hàn Quốc',
+        'Tiếng Anh',
+        'Tiếng Nhật',
         'Dược'
     ];
 
     const candidates = [
-        // Lập trình / CNTT
-        { majorName: 'Lập trình Web', weights: { logical: 1.0, analysis: 0.6, detail: 0.7, creativity: 0.3 } },
-        { majorName: 'Lập trình Mobile', weights: { logical: 1.0, analysis: 0.6, detail: 0.7, creativity: 0.3 } },
-        { majorName: 'Lập trình Game', weights: { logical: 0.8, creativity: 1.0, analysis: 0.4, detail: 0.4 } },
-        { majorName: 'Phát triển Phần mềm', weights: { logical: 1.0, analysis: 0.7, detail: 0.9 } },
-        { majorName: 'Lập trình Ứng dụng Trí tuệ nhân tạo (AI)', weights: { analysis: 1.0, logical: 0.9, detail: 0.6 } },
-        { majorName: 'Xử lý Dữ liệu', weights: { analysis: 1.0, logical: 0.8, detail: 0.7 } },
-
-        // Kinh doanh
-        { majorName: 'Quản trị Kinh doanh - Digital Marketing', weights: { creativity: 0.9, communication: 0.8, teamwork: 0.4, detail: 0.4 } },
-        { majorName: 'Quản trị Kinh doanh - Marketing & Sales', weights: { communication: 0.9, leadership: 0.6, creativity: 0.5 } },
-        { majorName: 'Quản trị Kinh doanh - Truyền thông & Tổ chức sự kiện', weights: { communication: 0.9, leadership: 0.7, creativity: 0.7, detail: 0.4 } },
-
-        // Kỹ thuật & tự động hoá
-        { majorName: 'Công nghệ Kỹ thuật Điện', weights: { logical: 0.8, analysis: 0.7, detail: 0.7 } },
-        { majorName: 'Công nghệ Kỹ thuật Điện tử', weights: { logical: 0.8, analysis: 0.7, detail: 0.7 } },
-        { majorName: 'Công nghệ Kỹ thuật Điều khiển & Tự động hoá', weights: { logical: 0.9, analysis: 0.9, detail: 0.8 } },
-        { majorName: 'Công nghệ Chip Bán dẫn', weights: { analysis: 1.0, detail: 0.9, logical: 0.6 } },
-        { majorName: 'Công nghệ Kỹ thuật Cơ khí', weights: { logical: 0.7, analysis: 0.7, detail: 0.8 } },
-
-        // Dịch vụ / du lịch / logistics
-        { majorName: 'Quản trị Du lịch', weights: { communication: 0.9, teamwork: 0.6, language: 0.6 } },
-        { majorName: 'Lữ hành', weights: { communication: 0.9, teamwork: 0.6, language: 0.6 } },
-        { majorName: 'Quản trị Khách sạn', weights: { communication: 0.9, leadership: 0.6, detail: 0.6 } },
-        { majorName: 'Quản trị Vận tải Logistics', weights: { detail: 0.8, analysis: 0.7, logical: 0.6 } },
-
-        // Ngôn ngữ
-        { majorName: 'Ngôn ngữ Trung', weights: { language: 1.0, communication: 0.6 } },
-        { majorName: 'Ngôn ngữ Hàn', weights: { language: 1.0, communication: 0.6 } },
-        { majorName: 'Ngôn ngữ Anh', weights: { language: 1.0, communication: 0.6 } },
-        { majorName: 'Ngôn ngữ Nhật', weights: { language: 1.0, communication: 0.6 } },
-
-        // Khác
-        { majorName: 'Thiết kế Đồ hoạ', weights: { creativity: 1.0, detail: 0.5 } },
-        { majorName: 'Dược', weights: { detail: 1.0, analysis: 0.5 } }
+        { majorName: 'Lập trình Web', weights: { logical: 1.0, analysis: 0.65, detail: 0.7, creativity: 0.3 } },
+        { majorName: 'Lập trình Mobile', weights: { logical: 1.0, analysis: 0.65, detail: 0.7, creativity: 0.3 } },
+        { majorName: 'Lập trình Game', weights: { logical: 0.8, creativity: 1.0, analysis: 0.5, detail: 0.45 } },
+        { majorName: 'Phát triển Phần mềm', weights: { logical: 1.0, analysis: 0.75, detail: 0.9 } },
+        { majorName: 'Lập trình Ứng dụng Trí tuệ nhân tạo (AI)', weights: { analysis: 1.0, logical: 0.9, detail: 0.65 } },
+        { majorName: 'Ứng dụng phần mềm', weights: { logical: 0.85, analysis: 0.65, detail: 0.75 } },
+        { majorName: 'Quản trị kinh doanh - Digital Marketing', weights: { creativity: 0.9, communication: 0.8, teamwork: 0.4, detail: 0.4 } },
+        { majorName: 'Quản trị kinh doanh - Marketing & Sales', weights: { communication: 0.9, leadership: 0.65, creativity: 0.5 } },
+        { majorName: 'Quản trị kinh doanh - Truyền thông & Tổ chức sự kiện', weights: { communication: 0.9, leadership: 0.7, creativity: 0.7, detail: 0.4 } },
+        { majorName: 'Quản trị dịch vụ du lịch và lữ hành', weights: { communication: 0.9, teamwork: 0.6, language: 0.6 } },
+        { majorName: 'Quản trị khách sạn nhà hàng', weights: { communication: 0.9, leadership: 0.6, detail: 0.6 } },
+        { majorName: 'Quản lý vận tải và dịch vụ logistics', weights: { detail: 0.8, analysis: 0.7, logical: 0.6 } },
+        { majorName: 'Công nghệ kỹ thuật điện, điện tử', weights: { logical: 0.8, analysis: 0.7, detail: 0.7 } },
+        { majorName: 'CN kỹ thuật điều khiển & tự động hoá', weights: { logical: 0.9, analysis: 0.9, detail: 0.8 } },
+        { majorName: 'Công nghệ Chip & Bán dẫn', weights: { analysis: 1.0, detail: 0.9, logical: 0.6 } },
+        { majorName: 'Thiết kế đồ hoạ', weights: { creativity: 1.0, detail: 0.55, communication: 0.3 } },
+        { majorName: 'Công nghệ kỹ thuật cơ khí', weights: { logical: 0.75, analysis: 0.7, detail: 0.85 } },
+        { majorName: 'Tiếng Trung Quốc', weights: { language: 1.0, communication: 0.6 } },
+        { majorName: 'Tiếng Hàn Quốc', weights: { language: 1.0, communication: 0.6 } },
+        { majorName: 'Tiếng Anh', weights: { language: 1.0, communication: 0.6 } },
+        { majorName: 'Tiếng Nhật', weights: { language: 1.0, communication: 0.6 } },
+        { majorName: 'Dược', weights: { detail: 1.0, analysis: 0.6, logical: 0.35 } }
     ];
 
     const scored = candidates.map(c => {
@@ -760,13 +745,28 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
     };
 
     const majorsList = [
-        'Lập trình Web', 'Lập trình Mobile', 'Lập trình Game', 'Phát triển Phần mềm',
-        'Lập trình Ứng dụng Trí tuệ nhân tạo (AI)', 'Quản trị Kinh doanh - Digital Marketing',
-        'Quản trị Kinh doanh - Marketing & Sales', 'Quản trị Kinh doanh - Truyền thông & Tổ chức sự kiện',
-        'Công nghệ Kỹ thuật Điện', 'Công nghệ Kỹ thuật Điện tử', 'Công nghệ Kỹ thuật Điều khiển & Tự động hoá',
-        'Công nghệ Chip Bán dẫn', 'Xử lý Dữ liệu', 'Thiết kế Đồ hoạ', 'Quản trị Du lịch',
-        'Lữ hành', 'Quản trị Khách sạn', 'Quản trị Vận tải Logistics', 'Công nghệ Kỹ thuật Cơ khí',
-        'Ngôn ngữ Trung', 'Ngôn ngữ Hàn', 'Ngôn ngữ Anh', 'Ngôn ngữ Nhật', 'Dược'
+        'Lập trình Web',
+        'Lập trình Mobile',
+        'Lập trình Game',
+        'Phát triển Phần mềm',
+        'Lập trình Ứng dụng Trí tuệ nhân tạo (AI)',
+        'Ứng dụng phần mềm',
+        'Quản trị kinh doanh - Digital Marketing',
+        'Quản trị kinh doanh - Marketing & Sales',
+        'Quản trị kinh doanh - Truyền thông & Tổ chức sự kiện',
+        'Quản trị dịch vụ du lịch và lữ hành',
+        'Quản trị khách sạn nhà hàng',
+        'Quản lý vận tải và dịch vụ logistics',
+        'Công nghệ kỹ thuật điện, điện tử',
+        'CN kỹ thuật điều khiển & tự động hoá',
+        'Công nghệ Chip & Bán dẫn',
+        'Thiết kế đồ hoạ',
+        'Công nghệ kỹ thuật cơ khí',
+        'Tiếng Trung Quốc',
+        'Tiếng Hàn Quốc',
+        'Tiếng Anh',
+        'Tiếng Nhật',
+        'Dược'
     ];
 
     const baseline = typeof baselineMajorsFromSkills === 'function' ? baselineMajorsFromSkills(derivedSkillScores) : [];
@@ -819,31 +819,39 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
     }
 
     const promptText = [
-        'Bạn là AI tư vấn hướng nghiệp.',
+        'Vai trò: chuyên gia tư vấn hướng nghiệp dựa trên dữ liệu bài làm.',
         '',
-        'NGUỒN DỮ LIỆU QUAN TRỌNG NHẤT là submittedAnswerEvidence: đó là từng câu hỏi + đáp án thí sinh chọn + options của câu đó.',
-        'Bạn PHẢI bám trực tiếp vào đáp án đã chọn để suy luận xu hướng năng lực/sở thích.',
-        'derivedSkillScores là kết quả tính từ bài làm, dùng làm neo kiểm tra chéo. KHÔNG được bịa thêm năng lực trái với dữ liệu này.',
+        'Mục tiêu:',
+        '- Chọn tối đa 3 ngành trong majorsList phù hợp nhất với thí sinh.',
+        '- Nếu tín hiệu yếu hoặc mâu thuẫn, có thể trả suggestedMajors rỗng.',
         '',
-        'Mục tiêu: chọn tối đa 3 chuyên ngành trong majorsList phù hợp nhất với THÍ SINH NÀY.',
-        'Với explanationSummary và từng reasons: phải nêu rõ liên hệ với ít nhất một câu trả lời cụ thể (có thể ghi theo dạng Q{order}).',
-        'Không được đưa ra lập luận chung chung giống mọi thí sinh khác.',
-        'Không được trả câu trả lời kiểu mẫu giống nhau nếu dữ liệu bài làm khác nhau.',
+        'Ưu tiên dữ liệu (theo thứ tự):',
+        '1) submittedAnswerEvidence (quan trọng nhất, phải bám trực tiếp đáp án đã chọn).',
+        '2) derivedSkillScores (dùng để kiểm tra chéo, không được mâu thuẫn).',
+        '3) baselineSuggestions (chỉ tham khảo).',
         '',
-        'Điểm score trong suggestedMajors:',
-        '- Phải phân hạng rõ (không được gán cùng một con số kiểu 90/90/90 cho cả ba ngành trừ khi thực sự không phân biệt được).',
-        '- Ưu tiên chênh lệch ít nhất 3–15 điểm giữa các ngành khi mức độ phù hợp khác nhau.',
-        '- Trường score trong JSON do bạn ước lượng độ phù hợp theo bằng chứng câu trả lời; không cố định 85–95.',
-        '- Nếu không đủ bằng chứng từ câu trả lời, giảm score hoặc để suggestedMajors rỗng.',
+        'Quy tắc bắt buộc:',
+        '- Chỉ dùng majorName nằm trong majorsList.',
+        '- Mỗi ngành phải có reasons gắn với bằng chứng cụ thể (ưu tiên nêu Q{order}).',
+        '- Không dùng lập luận chung chung áp cho mọi thí sinh.',
+        '- Nếu thuộc nhóm CNTT/Kinh doanh/Kỹ thuật, phải ưu tiên trả ngành con cụ thể (ví dụ Web/Mobile/Game/AI...) thay vì tên nhóm chung.',
+        '- Không mặc định "Lập trình Web" nếu bằng chứng không nghiêng về CNTT.',
+        '- Bỏ qua mọi ngành "(dự kiến)" hoặc chưa tuyển sinh ổn định.',
+        '- Score phải có phân hạng rõ; tránh 90/90/90 nếu không có bằng chứng tương đương.',
+        '- Nếu bằng chứng chưa đủ: suggestedMajors=[], explanationSummary nêu rõ "chưa đủ tín hiệu từ bài làm".',
         '',
-        'QUY TẮC BẮT BUỘC:',
-        '- CHỈ được chọn majorName trong majorsList.',
-        '- KHÔNG mặc định chọn "Lập trình Web" nếu câu trả lời không hướng về lập trình/CNTT.',
-        '- Mỗi ngành trong suggestedMajors cần reasons gắn với >= 2 bằng chứng từ submittedAnswerEvidence (ưu tiên có Q{order}).',
-        '- Không được mâu thuẫn với derivedSkillScores: ví dụ điểm language thấp thì không được giải thích như language rất mạnh.',
-        '- Nếu từ câu trả lời không đủ để kết luận, trả suggestedMajors rỗng và explanationSummary nêu rõ "chưa đủ tín hiệu từ bài làm".',
+        'Yêu cầu độ dài để tránh tràn token:',
+        '- Mỗi reasons item <= 20 từ.',
+        '- explanationSummary <= 80 từ.',
         '',
-        'Dữ liệu đầu vào (JSON):',
+        'Output duy nhất là JSON object hợp lệ theo schema:',
+        '{',
+        '  "suggestedMajors":[{"majorName":"...","score":0-100,"reasons":["..."],"matchedSkills":["..."]}],',
+        '  "explanationSummary":"...",',
+        '  "trendSignals":{"strengths":["..."],"risks":["..."],"marketNote":"..."}',
+        '}',
+        '',
+        'Input JSON:',
         JSON.stringify({
             quizId,
             attemptId: attemptId ? String(attemptId) : null,
@@ -852,10 +860,7 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
             topSkills,
             baselineSuggestions: baseline,
             majorsList
-        }, null, 2),
-        '',
-        'Trả về JSON theo cấu trúc:',
-        '{ "suggestedMajors":[{"majorName":"...","score":0-100,"reasons":["..."],"matchedSkills":["..."]}], "explanationSummary":"...", "trendSignals":{"strengths":["..."],"risks":["..."],"marketNote":"..."} }'
+        })
     ].join('\n');
 
     try {
@@ -883,34 +888,9 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
                             role: "user",
                             parts: [{
                               text: `
-                  Bạn là AI hướng nghiệp. Luôn trả về đúng một JSON object (không markdown).
-                  
-                  Cấu trúc:
-                  {
-                    "suggestedMajors":[
-                      {
-                        "majorName":"tên trong majorsList",
-                        "score":0-100,
-                        "reasons":["..."],
-                        "matchedSkills":["..."]
-                      }
-                    ],
-                    "explanationSummary":"...",
-                    "trendSignals":{
-                      "strengths":[],
-                      "risks":[],
-                      "marketNote":""
-                    }
-                  }
-                  
-                  Yêu cầu:
-                  - Score phải khác nhau
-                  - Không được trả text ngoài JSON
-                  - Mỗi reasons item <= 20 từ
-                  - explanationSummary <= 80 từ
-                  
-                  DATA:
-                  ${promptText}
+Bạn là AI hướng nghiệp. Chỉ trả về 1 JSON object hợp lệ, không markdown, không text thừa.
+
+${promptText}
                               `
                             }]
                           }
@@ -920,7 +900,8 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
                             maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS,
                             thinkingConfig: {
                               thinkingBudget: 0
-                            }
+                            },
+                            responseMimeType: 'application/json'
                           }
                       })
                     }
@@ -1121,6 +1102,7 @@ app.post('/api/assessments/:quizId/submit', async (req, res) => {
             attemptId: attempt._id,
             aiRunId: run._id,
             quizId,
+            aiStatus: run.provider === 'gemini' && !!run.fallbackUsed ? 'error' : 'ok',
             student: {
                 studentName: attempt.studentName,
                 studentPhone: attempt.studentPhone,
@@ -1208,6 +1190,7 @@ app.post('/api/submit/hybrid-ai', async (req, res) => {
             attemptId: attempt._id,
             aiRunId: run._id,
             quizId: qid,
+            aiStatus: run.provider === 'gemini' && !!run.fallbackUsed ? 'error' : 'ok',
             student: {
                 studentName: attempt.studentName,
                 studentPhone: attempt.studentPhone,
@@ -1245,11 +1228,15 @@ app.get('/api/assessments/attempts/:attemptId', async (req, res) => {
         const cfg = await AssessmentConfig.findOne({ quizId: attempt.quizId }).sort({ version: -1, createdAt: -1 }).lean();
         const run = await AssessmentAiRun.findOne({ attemptId: attempt._id }).sort({ createdAt: -1 }).lean();
         if (!run) return res.status(404).json({ error: 'AI result not found' });
+        const aiStatus = run.provider === 'gemini' && !!run.fallbackUsed ? 'error' : 'ok';
 
         res.json({
             attempt,
             config: cfg ? { quizId: cfg.quizId, version: cfg.version, questions: cfg.questions } : null,
-            result: run
+            result: {
+                ...run,
+                aiStatus
+            }
         });
     } catch (e) {
         console.error(e);
@@ -1317,6 +1304,7 @@ app.post('/api/assessments/attempts/:attemptId/retry-ai', async (req, res) => {
             success: true,
             attemptId: attempt._id,
             aiRunId: run._id,
+            aiStatus: run.provider === 'gemini' && !!run.fallbackUsed ? 'error' : 'ok',
             derivedSkillScores: run.derivedSkillScores,
             suggestedMajors: run.suggestedMajors,
             explanationSummary: run.explanationSummary,
@@ -1353,6 +1341,9 @@ app.get('/api/assessments/attempts', async (req, res) => {
         const withAi = await Promise.all(attempts.map(async (a) => {
             const run = await AssessmentAiRun.findOne({ attemptId: a._id }).sort({ createdAt: -1 }).lean();
             const top = run?.suggestedMajors?.[0] || null;
+            const aiStatus = run
+                ? (run.provider === 'gemini' && !!run.fallbackUsed ? 'error' : 'ok')
+                : 'missing';
             return {
                 attemptId: a._id,
                 quizId: a.quizId,
@@ -1366,7 +1357,8 @@ app.get('/api/assessments/attempts', async (req, res) => {
                 clientMeta: a.clientMeta || {},
                 topMajor: top ? { majorName: top.majorName, score: top.score } : null,
                 provider: run?.provider || null,
-                fallbackUsed: !!run?.fallbackUsed
+                fallbackUsed: !!run?.fallbackUsed,
+                aiStatus
             };
         }));
 

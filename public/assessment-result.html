@@ -202,6 +202,7 @@
                         <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Họ và tên</th>
                         <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Số điện thoại</th>
                         <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Email</th>
+                        <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Trạng thái AI</th>
                         <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Ngành gợi ý</th>
                         <th id="retryAiColTh" style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb; display:none;">Thao tác</th>
                     </tr>
@@ -285,7 +286,7 @@
         document.getElementById('summaryText').innerText = data.explanationSummary;
         document.getElementById('marketText').innerText = data.trendSignals.marketNote;
         const summaryEl = document.getElementById('summaryText');
-        const isAiFallback = String(data.explanationSummary || '').toLowerCase().includes('lỗi kết nối gemini api');
+        const isAiFallback = String(data.aiStatus || '').toLowerCase() === 'error';
         const hasTrendData = (
             Array.isArray(data?.trendSignals?.strengths) && data.trendSignals.strengths.length > 0
         ) || (
@@ -399,6 +400,7 @@
             <div><strong>Họ tên:</strong> ${esc(attempt.studentName)}</div>
             <div><strong>Số điện thoại:</strong> ${esc(attempt.studentPhone || '')}</div>
             <div><strong>Email:</strong> ${esc(attempt.studentEmail)}</div>
+            <div><strong>Trạng thái AI:</strong> ${result.aiStatus === 'error' ? 'Lỗi AI' : 'Hoạt động'}</div>
         `;
         card.style.display = 'block';
 
@@ -406,7 +408,8 @@
             suggestedMajors: result.suggestedMajors || [],
             explanationSummary: result.explanationSummary || '',
             trendSignals: result.trendSignals || { strengths: [], risks: [], marketNote: '' },
-            derivedSkillScores: result.derivedSkillScores || {}
+            derivedSkillScores: result.derivedSkillScores || {},
+            aiStatus: result.aiStatus || 'ok'
         };
     }
 
@@ -436,9 +439,7 @@
         const errBox = document.getElementById('attemptListError');
         tbody.innerHTML = '';
         lastAttemptListItems = Array.isArray(items) ? items : [];
-        const hasAnyAiError = lastAttemptListItems.some(it =>
-            String((it.topMajor && it.topMajor.majorName) || '').trim().toLowerCase() === 'lỗi ai'
-        );
+        const hasAnyAiError = lastAttemptListItems.some(it => String(it.aiStatus || '').toLowerCase() === 'error');
         if (retryColTh) retryColTh.style.display = hasAnyAiError ? '' : 'none';
         if (retryBtn) retryBtn.style.display = 'none';
         if (errBox) errBox.style.display = 'none';
@@ -446,7 +447,7 @@
         if (!lastAttemptListItems.length) {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td colspan="${hasAnyAiError ? 5 : 4}" style="padding: 14px; color: var(--secondary); border-bottom: 1px solid #f1f5f9;">
+                <td colspan="${hasAnyAiError ? 6 : 5}" style="padding: 14px; color: var(--secondary); border-bottom: 1px solid #f1f5f9;">
                     Chưa có dữ liệu thí sinh.
                 </td>
             `;
@@ -457,11 +458,13 @@
             const tr = document.createElement('tr');
             tr.style.cursor = 'pointer';
             const topMajorName = String((it.topMajor && it.topMajor.majorName) || '').trim();
-            const isAiError = topMajorName.toLowerCase() === 'lỗi ai';
+            const isAiError = String(it.aiStatus || '').toLowerCase() === 'error';
+            const aiStatusLabel = isAiError ? 'Lỗi AI' : 'Hoạt động';
             tr.innerHTML = `
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${esc(it.studentName || '')}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${esc(it.studentPhone || '')}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${esc(it.studentEmail || '')}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; font-weight:600; color:${isAiError ? '#b91c1c' : '#047857'};">${aiStatusLabel}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${esc(topMajorName)}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; ${hasAnyAiError ? '' : 'display:none;'}">
                     ${isAiError ? `<button class="retry-ai-btn" data-attempt-id="${esc(it.attemptId || '')}" style="padding:6px 10px; border:0; border-radius:8px; background:var(--warning); color:#111827; font-weight:700; cursor:pointer;">Thử lại AI</button>` : ''}

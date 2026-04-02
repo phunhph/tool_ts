@@ -1191,8 +1191,7 @@
                         `;
                         resultDiv.appendChild(dash);
 
-                        const aiTopName = String((data.suggestedMajors && data.suggestedMajors[0]?.majorName) || '').trim().toLowerCase();
-                        const hasAiError = aiTopName === 'lỗi ai' || String(data.explanationSummary || '').toLowerCase().includes('lỗi kết nối');
+                        const hasAiError = String(data.aiStatus || '').toLowerCase() === 'error';
                         if (hasAiError) {
                             const retryWrap = document.createElement('div');
                             retryWrap.style.marginTop = '10px';
