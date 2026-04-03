@@ -332,6 +332,19 @@
                     <input type="text" id="studentAddress" placeholder="Enter your address" data-i18n="ph_student_address"
                         required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;">
                 </div>
+                <div class="full">
+                    <label for="classCode" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
+                        <span data-i18n="label_student_grade">Grade</span>
+                        <span style="color: red;">*</span>
+                    </label>
+                    <select id="classCode"
+                        style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px; background: #fff;"
+                        required>
+                        <option value="" disabled selected data-i18n="ph_student_grade"></option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                    </select>
+                </div>
                 <div class="full" id="studentSchoolFieldWrap">
                     <label for="studentSchool" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
                         <span data-i18n="label_student_school">School (High school)</span>
@@ -936,13 +949,14 @@
         function saveQuizState() {
             if (!quizIdForStorage) return;
 
-            const state = {
+                const state = {
                 studentName: document.getElementById('studentName').value,
                 studentPhone: document.getElementById('studentPhone').value,
                 studentEmail: document.getElementById('studentEmail').value,
                 studentDob: document.getElementById('studentDob').value,
                 studentAddress: document.getElementById('studentAddress').value,
                 studentSchool: document.getElementById('studentSchool').value,
+                classCode: document.getElementById('classCode').value,
                 answers: {}
             };
 
@@ -974,6 +988,7 @@
                 if (state.studentDob) document.getElementById('studentDob').value = state.studentDob;
                 if (state.studentAddress) document.getElementById('studentAddress').value = state.studentAddress;
                 if (state.studentSchool) document.getElementById('studentSchool').value = state.studentSchool;
+                if (state.classCode) document.getElementById('classCode').value = state.classCode;
 
                 // Restore answers
                 if (state.answers) {
@@ -996,7 +1011,7 @@
 
         function attachAutoSave() {
             // Attach to student inputs (change covers <select> for school)
-            ['studentName', 'studentPhone', 'studentEmail', 'studentDob', 'studentAddress', 'studentSchool'].forEach(id => {
+            ['studentName', 'studentPhone', 'studentEmail', 'studentDob', 'studentAddress', 'studentSchool', 'classCode'].forEach(id => {
                 const el = document.getElementById(id);
                 if (!el) return;
                 el.addEventListener('input', saveQuizState);
@@ -1035,10 +1050,11 @@
             const studentDob = document.getElementById('studentDob').value.trim();
             const studentAddress = document.getElementById('studentAddress').value.trim();
             const studentSchool = document.getElementById('studentSchool').value.trim();
+            const classCode = document.getElementById('classCode').value.trim();
 
             if (!isAuto) {
-                if (!studentName || !studentPhone || !studentEmail || !studentDob || !studentAddress || !studentSchool) {
-                    alert('Please fill in all student information fields (Name, Phone, Email, DOB, Address, School).');
+                if (!studentName || !studentPhone || !studentEmail || !studentDob || !studentAddress || !studentSchool || !classCode) {
+                    alert('Please fill in all student information fields (Name, Phone, Email, DOB, Address, Grade, School).');
                     document.getElementById('studentInfoSection').scrollIntoView({ behavior: 'smooth' });
                     return;
                 }
@@ -1123,6 +1139,7 @@
                         studentDob: studentDob,
                         studentAddress: studentAddress,
                         studentSchool: studentSchool,
+                        classCode: classCode,
                         answers: answers,
                         macAddress: deviceId
                     })

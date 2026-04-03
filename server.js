@@ -1576,6 +1576,7 @@ app.get('/api/assessments/attempts-export', async (req, res) => {
             'StudentDob',
             'StudentAddress',
             'StudentSchool',
+            'ClassCode',
             'SuggestedMajor'
         ];
 
@@ -1596,6 +1597,7 @@ app.get('/api/assessments/attempts-export', async (req, res) => {
                 a.studentDob || '',
                 a.studentAddress || '',
                 a.studentSchool || '',
+                a.classCode || '',
                 m1.majorName || ''
             ]);
         }
@@ -1637,6 +1639,7 @@ app.post('/api/assessments/attempts-export-sheets', async (req, res) => {
             'StudentDob',
             'StudentAddress',
             'StudentSchool',
+            'ClassCode',
             'SuggestedMajor',
             'SubmittedAt'
         ];
@@ -1653,6 +1656,7 @@ app.post('/api/assessments/attempts-export-sheets', async (req, res) => {
                 String(a.studentDob || ''),
                 String(a.studentAddress || ''),
                 String(a.studentSchool || ''),
+                String(a.classCode || ''),
                 String(m1.majorName || ''),
                 a.submittedAt ? new Date(a.submittedAt).toISOString() : ''
             ]);

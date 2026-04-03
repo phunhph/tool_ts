@@ -204,6 +204,7 @@
                         <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Số điện thoại</th>
                         <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Email</th>
                         <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Trường</th>
+                        <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Khối lớp</th>
                         <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Trạng thái AI</th>
                         <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Ngành gợi ý</th>
                         <th id="retryAiColTh" style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb; display:none;">Thao tác</th>
@@ -515,7 +516,7 @@
         if (!lastAttemptListItems.length) {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td colspan="${hasAnyAiError ? 7 : 6}" style="padding: 14px; color: var(--secondary); border-bottom: 1px solid #f1f5f9;">
+                <td colspan="${hasAnyAiError ? 8 : 7}" style="padding: 14px; color: var(--secondary); border-bottom: 1px solid #f1f5f9;">
                     Chưa có dữ liệu thí sinh.
                 </td>
             `;
@@ -533,6 +534,7 @@
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${esc(it.studentPhone || '')}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${esc(it.studentEmail || '')}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; max-width: 220px;">${esc(it.studentSchool || '')}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${esc(it.classCode || '')}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; font-weight:600; color:${isAiError ? '#b91c1c' : '#047857'};">${aiStatusLabel}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${esc(topMajorName)}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; ${hasAnyAiError ? '' : 'display:none;'}">
