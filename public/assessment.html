@@ -158,12 +158,44 @@
         #studentInfoSection input[type="text"],
         #studentInfoSection input[type="email"],
         #studentInfoSection input[type="tel"],
-        #studentInfoSection input[type="date"] {
+        #studentInfoSection input[type="date"],
+        #studentInfoSection select {
             width: 100%;
             padding: 0.8rem;
             border: 1px solid #ddd;
             border-radius: 8px;
             background: #fff;
+            box-sizing: border-box;
+            font-size: 0.98rem;
+            line-height: 1.35;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        #studentInfoSection input[type="text"]:focus,
+        #studentInfoSection input[type="email"]:focus,
+        #studentInfoSection input[type="tel"]:focus,
+        #studentInfoSection input[type="date"]:focus,
+        #studentInfoSection select:focus {
+            border-color: #93c5fd;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+            outline: none;
+        }
+
+        #studentInfoSection select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            padding-right: 2.2rem;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364758b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.7rem center;
+            background-size: 14px;
+        }
+
+        #studentInfoSection select:disabled {
+            background-color: #f8fafc;
+            color: #94a3b8;
+            cursor: not-allowed;
         }
 
         #studentInfoSection label {
@@ -171,6 +203,20 @@
             margin-bottom: 0.5rem;
             font-weight: 600;
             color: var(--text);
+        }
+
+        .field-error {
+            color: #b91c1c;
+            font-size: 0.85rem;
+            margin-top: 6px;
+            line-height: 1.35;
+        }
+
+        #error_questionNav {
+            color: #b91c1c;
+            font-size: 0.92rem;
+            margin: 6px 0 0 auto;
+            font-weight: 600;
         }
 
         /* Question number badge */
@@ -325,12 +371,42 @@
                         required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;">
                 </div>
                 <div class="full">
-                    <label for="studentAddress" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
-                        <span data-i18n="label_student_address">Address</span>
+                    <label for="studentProvince" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
+                        <span data-i18n="label_student_province">Province/City</span>
                         <span style="color: red;">*</span>
                     </label>
-                    <input type="text" id="studentAddress" placeholder="Enter your address" data-i18n="ph_student_address"
-                        required style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;">
+                    <select id="studentProvince" required>
+                        <option value="" selected disabled data-i18n="ph_select_province">Chọn tỉnh/thành phố...</option>
+                    </select>
+                </div>
+                <div class="full">
+                    <label for="studentDistrict" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
+                        <span data-i18n="label_student_district">District</span>
+                        <span style="color: red;">*</span>
+                    </label>
+                    <select id="studentDistrict" required>
+                        <option value="" selected disabled data-i18n="ph_select_district">Chọn quận/huyện...</option>
+                    </select>
+                </div>
+                <div class="full" id="studentGradeWrap">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
+                        <span data-i18n="label_student_grade">Grade</span>
+                        <span style="color: red;">*</span>
+                    </label>
+                    <div style="display:flex; gap:14px; flex-wrap:wrap;">
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                            <input type="radio" name="studentGrade" value="10">
+                            <span data-i18n="grade_10">Grade 10</span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                            <input type="radio" name="studentGrade" value="11">
+                            <span data-i18n="grade_11">Grade 11</span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                            <input type="radio" name="studentGrade" value="12">
+                            <span data-i18n="grade_12">Grade 12</span>
+                        </label>
+                    </div>
                 </div>
                 <div class="full" id="studentSchoolFieldWrap">
                     <label for="studentSchool" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
@@ -471,6 +547,266 @@
 
         let currentQuiz = null;
         let quizIdForStorage = null;
+        let provinceName = '';
+        let provinceCode = null;
+        let provinceList = [];
+        let districtNameSet = new Set();
+        const PROVINCES_API_URL = 'https://provinces.open-api.vn/api/v2/';
+
+        async function loadProvinceChildrenByCode(code) {
+            const resp = await fetch(`https://provinces.open-api.vn/api/v2/p/${encodeURIComponent(code)}?depth=2`);
+            if (!resp.ok) throw new Error('Failed to load province children');
+            return resp.json();
+        }
+
+        function normalizeText(s) {
+            return String(s || '')
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .trim();
+        }
+
+        function renderDistrictSuggestions(keyword) {
+            const sel = document.getElementById('studentDistrict');
+            if (!sel) return;
+            const key = normalizeText(keyword);
+            const names = Array.from(districtNameSet);
+            const filtered = key
+                ? names.filter(n => normalizeText(n).includes(key))
+                : names;
+            const oldValue = (sel.value || '').trim();
+            sel.innerHTML = `<option value="" disabled ${oldValue ? '' : 'selected'} data-i18n="ph_select_district"></option>`;
+            filtered.slice(0, 300).forEach((name) => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                if (name === oldValue) opt.selected = true;
+                sel.appendChild(opt);
+            });
+            if (typeof setLanguage === 'function') setLanguage(localStorage.getItem('lang') || 'vi');
+        }
+
+        function getStudentAddressValue() {
+            const district = (document.getElementById('studentDistrict')?.value || '').trim();
+            let province = '';
+            const provinceEl = document.getElementById('studentProvince');
+            if (provinceEl) {
+                const idx = provinceEl.selectedIndex;
+                province = idx >= 0 ? String(provinceEl.options[idx].text || '').trim() : '';
+            }
+            if (!district && !province) return '';
+            if (!district) return province;
+            if (!province) return district;
+            return `${district}, ${province}`;
+        }
+
+        function getSelectedStudentGrade() {
+            const checked = document.querySelector('input[name="studentGrade"]:checked');
+            return checked ? String(checked.value || '').trim() : '';
+        }
+
+        function formatDateLocal(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function getLang() {
+            return localStorage.getItem('lang') || 'vi';
+        }
+
+        function resolveFieldHost(fieldKey) {
+            if (fieldKey === 'studentGrade') return document.getElementById('studentGradeWrap');
+            if (fieldKey === 'questionNav') return document.getElementById('paginationControls');
+            const el = document.getElementById(fieldKey);
+            return el ? (el.closest('div') || el.parentElement) : null;
+        }
+
+        function clearFieldError(fieldKey) {
+            const id = `error_${fieldKey}`;
+            const old = document.getElementById(id);
+            if (old) old.remove();
+        }
+
+        function setFieldError(fieldKey, message) {
+            const host = resolveFieldHost(fieldKey);
+            if (!host) return;
+            const id = `error_${fieldKey}`;
+            let err = document.getElementById(id);
+            if (!err) {
+                err = document.createElement('div');
+                err.id = id;
+                err.className = 'field-error';
+                host.appendChild(err);
+            }
+            err.textContent = message;
+        }
+
+        function clearAllStudentFieldErrors() {
+            ['studentName', 'studentPhone', 'studentEmail', 'studentDob', 'studentProvince', 'studentDistrict', 'studentGrade', 'studentSchool']
+                .forEach(clearFieldError);
+        }
+
+        function isValidDistrictName(name) {
+            const normalized = normalizeText(name);
+            if (!normalized) return false;
+            for (const n of districtNameSet) {
+                if (normalizeText(n) === normalized) return true;
+            }
+            return false;
+        }
+
+        function isAtLeastAge(dobIso, minAge) {
+            if (!dobIso) return false;
+            const m = String(dobIso).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (!m) return false;
+            const dob = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+            if (Number.isNaN(dob.getTime())) return false;
+            const now = new Date();
+            let age = now.getFullYear() - dob.getFullYear();
+            const monthDelta = now.getMonth() - dob.getMonth();
+            if (monthDelta < 0 || (monthDelta === 0 && now.getDate() < dob.getDate())) age--;
+            return age >= minAge;
+        }
+
+        function getMinAgeByGrade(grade) {
+            if (String(grade) === '10') return 15;
+            if (String(grade) === '11') return 16;
+            if (String(grade) === '12') return 17;
+            return 16;
+        }
+
+        function normalizeSpaces(v) {
+            return String(v || '').trim().replace(/\s+/g, ' ');
+        }
+
+        function isValidStudentName(name) {
+            const n = normalizeSpaces(name);
+            if (!n || n.length < 4 || n.length > 80) return false;
+            const words = n.split(' ').filter(Boolean);
+            if (words.length < 2) return false; // require at least first + last name
+            // Vietnamese letters + latin letters, spaces, apostrophe, hyphen
+            const nameRegex = /^[A-Za-zÀ-Ỹà-ỹ]+(?:[ '-][A-Za-zÀ-Ỹà-ỹ]+)*$/u;
+            if (!nameRegex.test(n)) return false;
+            // Reject meaningless repeated-char tokens like "aaa", "yyy", "kkkk"
+            const repeatedToken = words.some(w => /^([A-Za-zÀ-Ỹà-ỹ])\1{2,}$/u.test(w));
+            if (repeatedToken) return false;
+            // Avoid ultra-short fake names like "yy"
+            if (words.some(w => w.length < 2)) return false;
+            return true;
+        }
+
+        function normalizePhoneVN(phone) {
+            return String(phone || '').replace(/\D/g, '');
+        }
+
+        function isValidPhoneVN(phone) {
+            const p = normalizePhoneVN(phone);
+            // Basic VN mobile/phone format: starts with 0 and has exactly 10 digits
+            return /^0\d{9}$/.test(p);
+        }
+
+        function isValidEmail(email) {
+            const e = String(email || '').trim();
+            // Strict enough for normal usage, avoids obvious malformed inputs
+            return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
+        }
+
+        async function initProvinceDistrictFields() {
+            const provinceInput = document.getElementById('studentProvince');
+            const districtInput = document.getElementById('studentDistrict');
+            if (!provinceInput || !districtInput) return;
+            try {
+                const pResp = await fetch(PROVINCES_API_URL);
+                if (!pResp.ok) throw new Error('Failed to load provinces');
+                provinceList = await pResp.json();
+                if (!Array.isArray(provinceList)) provinceList = [];
+
+                provinceInput.innerHTML = '';
+                const firstOpt = document.createElement('option');
+                firstOpt.value = '';
+                firstOpt.disabled = true;
+                firstOpt.selected = true;
+                firstOpt.setAttribute('data-i18n', 'ph_select_province');
+                firstOpt.textContent = '';
+                provinceInput.appendChild(firstOpt);
+
+                provinceList.forEach((p) => {
+                    const opt = document.createElement('option');
+                    opt.value = String(p?.code || '');
+                    opt.textContent = String(p?.name || '').trim();
+                    provinceInput.appendChild(opt);
+                });
+
+                // Default to Ha Noi (code=1), as requested API example.
+                provinceInput.value = '1';
+                const selectedProvince = provinceList.find(p => String(p?.code) === '1');
+                provinceName = String(selectedProvince?.name || '').trim();
+                provinceCode = 1;
+
+                const dJson = await loadProvinceChildrenByCode(1);
+                const units = Array.isArray(dJson?.districts) && dJson.districts.length
+                    ? dJson.districts
+                    : (Array.isArray(dJson?.wards) ? dJson.wards : []);
+                districtNameSet = new Set(
+                    units.map(d => String(d?.name || '').trim()).filter(Boolean)
+                );
+                renderDistrictSuggestions('');
+            } catch (e) {
+                console.error('Province API error:', e);
+                provinceName = '';
+                provinceCode = null;
+                provinceInput.innerHTML = '<option value="" selected disabled>Failed to load provinces</option>';
+                districtNameSet = new Set();
+            }
+            provinceInput.addEventListener('change', async (ev) => {
+                const selectedCode = String(ev.target.value || '').trim();
+                if (!selectedCode) return;
+                provinceCode = Number(selectedCode);
+                const selectedProvince = provinceList.find(p => String(p?.code) === selectedCode);
+                provinceName = String(selectedProvince?.name || '').trim();
+                districtInput.value = '';
+                districtNameSet = new Set();
+                renderDistrictSuggestions('');
+                try {
+                    const dJson = await loadProvinceChildrenByCode(selectedCode);
+                    const units = Array.isArray(dJson?.districts) && dJson.districts.length
+                        ? dJson.districts
+                        : (Array.isArray(dJson?.wards) ? dJson.wards : []);
+                    districtNameSet = new Set(
+                        units.map(d => String(d?.name || '').trim()).filter(Boolean)
+                    );
+                    renderDistrictSuggestions('');
+                    saveQuizState();
+                } catch (err) {
+                    console.error('Province children API error:', err);
+                }
+            });
+            districtInput.addEventListener('change', saveQuizState);
+            const dobInput = document.getElementById('studentDob');
+            if (dobInput) {
+                // Base guard; refined by selected grade below.
+                const latestDob = new Date();
+                latestDob.setFullYear(latestDob.getFullYear() - 15);
+                dobInput.max = formatDateLocal(latestDob);
+            }
+
+            const syncDobMaxByGrade = () => {
+                const g = getSelectedStudentGrade();
+                const minAge = getMinAgeByGrade(g || '10');
+                const dobEl = document.getElementById('studentDob');
+                if (!dobEl) return;
+                const maxDob = new Date();
+                maxDob.setFullYear(maxDob.getFullYear() - minAge);
+                dobEl.max = formatDateLocal(maxDob);
+            };
+            document.querySelectorAll('input[name="studentGrade"]').forEach(r => {
+                r.addEventListener('change', syncDobMaxByGrade);
+            });
+            syncDobMaxByGrade();
+        }
 
         function configureStudentSchoolField(quiz) {
             const wrap = document.getElementById('studentSchoolFieldWrap');
@@ -535,6 +871,7 @@
                 currentQuiz = quiz;
                 renderQuiz(quiz);
                 configureStudentSchoolField(quiz);
+                await initProvinceDistrictFields();
                 if (typeof setLanguage === 'function') setLanguage(localStorage.getItem('lang') || 'vi');
                 restoreQuizState(); // Restore state after rendering
                 attachAutoSave();   // Attach listeners for auto-save
@@ -791,6 +1128,7 @@
         }
 
         function updatePaginationUI() {
+            clearFieldError('questionNav');
             const cards = document.querySelectorAll('.question-card');
             cards.forEach((card, index) => {
                 if (index === window.currentQuestionIndex) {
@@ -832,6 +1170,13 @@
                 if (nextBtn) nextBtn.style.display = 'inline-block';
                 if (submitSection) submitSection.style.display = 'none';
             }
+
+            if (nextBtn && nextBtn.style.display !== 'none') {
+                const canNext = isCurrentQuestionAnswered();
+                nextBtn.disabled = !canNext;
+                nextBtn.style.opacity = canNext ? '1' : '0.6';
+                nextBtn.style.cursor = canNext ? 'pointer' : 'not-allowed';
+            }
         }
 
         function normalizeOptionText(opt) {
@@ -849,10 +1194,24 @@
             return String(opt);
         }
 
+        function isCurrentQuestionAnswered() {
+            const q = currentQuiz?.questions?.[window.currentQuestionIndex];
+            if (!q) return true;
+            return !!document.querySelector(`input[name="question_${q.originalIndex}"]:checked`);
+        }
+
         function nextQuestion() {
             if (!document.fullscreenElement && typeof isQuizSubmitted !== 'undefined' && !isQuizSubmitted) {
                 // enterFullScreen();
             }
+            if (!isCurrentQuestionAnswered()) {
+                const lang = getLang();
+                setFieldError('questionNav', lang === 'vi'
+                    ? 'Bạn cần chọn một đáp án trước khi sang câu tiếp theo.'
+                    : 'Please select an answer before moving to the next question.');
+                return;
+            }
+            clearFieldError('questionNav');
             if (window.currentQuestionIndex < window.totalQuestions - 1) {
                 window.currentQuestionIndex++;
                 updatePaginationUI();
@@ -941,7 +1300,15 @@
                 studentPhone: document.getElementById('studentPhone').value,
                 studentEmail: document.getElementById('studentEmail').value,
                 studentDob: document.getElementById('studentDob').value,
-                studentAddress: document.getElementById('studentAddress').value,
+                studentProvince: (() => {
+                    const sel = document.getElementById('studentProvince');
+                    if (!sel) return '';
+                    const idx = sel.selectedIndex;
+                    return idx >= 0 ? String(sel.options[idx].text || '').trim() : '';
+                })(),
+                studentDistrict: document.getElementById('studentDistrict').value,
+                studentAddress: getStudentAddressValue(),
+                studentGrade: getSelectedStudentGrade(),
                 studentSchool: document.getElementById('studentSchool').value,
                 answers: {}
             };
@@ -972,7 +1339,30 @@
                 if (state.studentPhone) document.getElementById('studentPhone').value = state.studentPhone;
                 if (state.studentEmail) document.getElementById('studentEmail').value = state.studentEmail;
                 if (state.studentDob) document.getElementById('studentDob').value = state.studentDob;
-                if (state.studentAddress) document.getElementById('studentAddress').value = state.studentAddress;
+                if (state.studentProvince) {
+                    const pSel = document.getElementById('studentProvince');
+                    if (pSel) {
+                        const matchOpt = Array.from(pSel.options).find(o => String(o.text || '').trim() === state.studentProvince);
+                        if (matchOpt) {
+                            pSel.value = String(matchOpt.value || '');
+                            pSel.dispatchEvent(new Event('change'));
+                        }
+                    }
+                }
+                if (state.studentDistrict) {
+                    const districtVal = state.studentDistrict;
+                    const dEl = document.getElementById('studentDistrict');
+                    if (dEl) {
+                        setTimeout(() => {
+                            dEl.value = districtVal;
+                            saveQuizState();
+                        }, 220);
+                    }
+                }
+                if (state.studentGrade) {
+                    const gEl = document.querySelector(`input[name="studentGrade"][value="${state.studentGrade}"]`);
+                    if (gEl) gEl.checked = true;
+                }
                 if (state.studentSchool) document.getElementById('studentSchool').value = state.studentSchool;
 
                 // Restore answers
@@ -996,17 +1386,31 @@
 
         function attachAutoSave() {
             // Attach to student inputs (change covers <select> for school)
-            ['studentName', 'studentPhone', 'studentEmail', 'studentDob', 'studentAddress', 'studentSchool'].forEach(id => {
+            ['studentName', 'studentPhone', 'studentEmail', 'studentDob', 'studentProvince', 'studentDistrict', 'studentSchool'].forEach(id => {
                 const el = document.getElementById(id);
                 if (!el) return;
-                el.addEventListener('input', saveQuizState);
-                el.addEventListener('change', saveQuizState);
+                el.addEventListener('input', () => {
+                    clearFieldError(id);
+                    saveQuizState();
+                });
+                el.addEventListener('change', () => {
+                    clearFieldError(id);
+                    saveQuizState();
+                });
+            });
+            document.querySelectorAll('input[name="studentGrade"]').forEach(el => {
+                el.addEventListener('change', () => {
+                    clearFieldError('studentGrade');
+                    saveQuizState();
+                });
             });
 
             // Attach to radio inputs via delegation on container
             document.getElementById('quizContainer').addEventListener('change', (e) => {
                 if (e.target.type === 'radio') {
+                    clearFieldError('questionNav');
                     saveQuizState();
+                    if (typeof updatePaginationUI === 'function') updatePaginationUI();
                 }
             });
         }
@@ -1029,16 +1433,70 @@
                 return;
             }
 
-            let studentName = document.getElementById('studentName').value.trim();
-            const studentPhone = document.getElementById('studentPhone').value.trim();
-            const studentEmail = document.getElementById('studentEmail').value.trim();
+            let studentName = normalizeSpaces(document.getElementById('studentName').value);
+            const studentPhoneRaw = document.getElementById('studentPhone').value.trim();
+            const studentPhone = normalizePhoneVN(studentPhoneRaw);
+            const studentEmail = String(document.getElementById('studentEmail').value || '').trim().toLowerCase();
             const studentDob = document.getElementById('studentDob').value.trim();
-            const studentAddress = document.getElementById('studentAddress').value.trim();
+            const studentProvinceCode = document.getElementById('studentProvince').value.trim();
+            const studentDistrict = document.getElementById('studentDistrict').value.trim();
+            const studentAddress = getStudentAddressValue();
+            const studentGrade = getSelectedStudentGrade();
             const studentSchool = document.getElementById('studentSchool').value.trim();
+            document.getElementById('studentName').value = studentName;
+            document.getElementById('studentPhone').value = studentPhone;
+            document.getElementById('studentEmail').value = studentEmail;
 
             if (!isAuto) {
-                if (!studentName || !studentPhone || !studentEmail || !studentDob || !studentAddress || !studentSchool) {
-                    alert('Please fill in all student information fields (Name, Phone, Email, DOB, Address, School).');
+                const lang = getLang();
+                clearAllStudentFieldErrors();
+                let hasError = false;
+                const requiredMsg = lang === 'vi' ? 'Vui lòng nhập thông tin này.' : 'This field is required.';
+                if (!studentName) { setFieldError('studentName', requiredMsg); hasError = true; }
+                if (!studentPhone) { setFieldError('studentPhone', requiredMsg); hasError = true; }
+                if (!studentEmail) { setFieldError('studentEmail', requiredMsg); hasError = true; }
+                if (!studentDob) { setFieldError('studentDob', requiredMsg); hasError = true; }
+                if (!studentProvinceCode) { setFieldError('studentProvince', requiredMsg); hasError = true; }
+                if (!studentDistrict) { setFieldError('studentDistrict', requiredMsg); hasError = true; }
+                if (!studentGrade) { setFieldError('studentGrade', requiredMsg); hasError = true; }
+                if (!studentSchool) { setFieldError('studentSchool', requiredMsg); hasError = true; }
+                if (hasError) {
+                    document.getElementById('studentInfoSection').scrollIntoView({ behavior: 'smooth' });
+                    return;
+                }
+                if (!isValidStudentName(studentName)) {
+                    setFieldError('studentName', lang === 'vi'
+                        ? 'Họ tên không hợp lệ. Vui lòng nhập đầy đủ họ và tên, không dùng ký tự lạ.'
+                        : 'Invalid name. Please enter full name without unusual characters.');
+                    document.getElementById('studentInfoSection').scrollIntoView({ behavior: 'smooth' });
+                    return;
+                }
+                if (!isValidPhoneVN(studentPhone)) {
+                    setFieldError('studentPhone', lang === 'vi'
+                        ? 'Số điện thoại không hợp lệ (phải bắt đầu bằng 0 và gồm 10 số).'
+                        : 'Invalid phone number (must start with 0 and contain 10 digits).');
+                    document.getElementById('studentInfoSection').scrollIntoView({ behavior: 'smooth' });
+                    return;
+                }
+                if (!isValidEmail(studentEmail)) {
+                    setFieldError('studentEmail', lang === 'vi'
+                        ? 'Email không hợp lệ.'
+                        : 'Invalid email address.');
+                    document.getElementById('studentInfoSection').scrollIntoView({ behavior: 'smooth' });
+                    return;
+                }
+                if (!isValidDistrictName(studentDistrict)) {
+                    setFieldError('studentDistrict', lang === 'vi'
+                        ? 'Vui lòng chọn Quận/Huyện hợp lệ trong danh sách.'
+                        : 'Please choose a valid district from the list.');
+                    document.getElementById('studentDistrict').focus();
+                    return;
+                }
+                const minAge = getMinAgeByGrade(studentGrade);
+                if (!isAtLeastAge(studentDob, minAge)) {
+                    setFieldError('studentDob', lang === 'vi'
+                        ? `Lớp ${studentGrade} yêu cầu thí sinh từ ${minAge} tuổi trở lên.`
+                        : `Grade ${studentGrade} requires age ${minAge}+.`);
                     document.getElementById('studentInfoSection').scrollIntoView({ behavior: 'smooth' });
                     return;
                 }
@@ -1090,7 +1548,10 @@
             });
 
             if (!isAuto && answeredCount < totalQuestions) {
-                alert(`You must answer ALL questions before submitting. (${answeredCount}/${totalQuestions} answered)\nPlease check the highlighted questions.`);
+                const lang = getLang();
+                setFieldError('questionNav', lang === 'vi'
+                    ? `Bạn phải trả lời tất cả câu hỏi (${answeredCount}/${totalQuestions}).`
+                    : `You must answer all questions (${answeredCount}/${totalQuestions}).`);
                 if (firstUnansweredIndex !== -1 && cards[firstUnansweredIndex]) {
                     window.currentQuestionIndex = firstUnansweredIndex;
                     if (typeof updatePaginationUI === 'function') updatePaginationUI();
@@ -1122,6 +1583,7 @@
                         studentEmail: studentEmail,
                         studentDob: studentDob,
                         studentAddress: studentAddress,
+                        studentClass: studentGrade,
                         studentSchool: studentSchool,
                         answers: answers,
                         macAddress: deviceId

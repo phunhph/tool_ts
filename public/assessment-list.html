@@ -131,6 +131,8 @@
         .mini-primary:hover { background: var(--primary); color: #fff; }
         .mini-success { background: #ecfdf5; color: var(--success); }
         .mini-success:hover { background: var(--success); color: #fff; }
+        .mini-warning { background: #fff7ed; color: #c2410c; }
+        .mini-warning:hover { background: #fb923c; color: #fff; }
         .mini-danger { background: #fef2f2; color: var(--danger); }
         .mini-danger:hover { background: #dc2626; color: #ffffff; }
         .mini-danger:focus-visible { outline: 2px solid #dc2626; outline-offset: 2px; }
@@ -172,12 +174,25 @@
             display: none; align-items: center; justify-content: center; z-index: 9999;
         }
         .modal-card { width: 400px; background: #fff; border-radius: 16px; padding: 24px; animation: slideIn 0.3s ease; }
+        .modal-card-lg { width: min(760px, 96vw); max-height: 88vh; overflow: auto; }
+        .edit-school-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+        .edit-school-order {
+            min-width: 26px; height: 26px; border-radius: 999px; background:#e2e8f0;
+            color:#334155; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;
+        }
+        .edit-school-input {
+            flex:1; min-width:0; padding:10px; border-radius:8px; border:1px solid #d1d5db;
+        }
+        .edit-remove-school {
+            border:1px solid #fecaca; background:#fff1f2; color:#9f1239; border-radius:8px; width:32px; height:32px; cursor:pointer;
+        }
         @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         
         .toast-msg {
             position: fixed; bottom: 20px; right: 20px; padding: 12px 24px; 
             background: #1e293b; color: #fff; border-radius: 12px; display: none; z-index: 10000;
         }
+        .field-error { color:#b91c1c; font-size:0.85rem; margin-top:6px; }
     </style>
 </head>
 <body>
@@ -261,6 +276,28 @@
         </div>
     </div>
 
+    <div id="editModal" class="modal-backdrop">
+        <div class="modal-card modal-card-lg">
+            <h3 style="margin-bottom: 12px;">Sửa thông tin đề assessment</h3>
+            <div style="margin-bottom: 14px;">
+                <label style="display:block; margin-bottom:6px; font-weight:600;">Tên đề</label>
+                <input id="editTitleInput" type="text" placeholder="Nhập tên đề"
+                       style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;">
+                <div id="editTitleErr" class="field-error" style="display:none;"></div>
+            </div>
+            <div style="margin-bottom: 14px;">
+                <label style="display:block; margin-bottom:6px; font-weight:600;">Danh sách trường</label>
+                <div id="editSchoolsWrap"></div>
+                <button id="editAddSchoolBtn" type="button" class="btn btn-secondary" style="padding:8px 12px;">+ Thêm trường</button>
+                <div id="editSchoolsErr" class="field-error" style="display:none;"></div>
+            </div>
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button id="editCancelBtn" class="btn btn-secondary">Hủy</button>
+                <button id="editSaveBtn" class="btn" style="background: var(--primary); color:#fff;">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+
     <div id="toastMsg" class="toast-msg"></div>
 
     <script src="js/translations.js?v=1.1"></script>
@@ -269,9 +306,11 @@
         const emptyState = document.getElementById('emptyState');
         const searchInput = document.getElementById('searchInput');
         const deleteModal = document.getElementById('deleteModal');
+        const editModal = document.getElementById('editModal');
         const deletePasswordInput = document.getElementById('deletePasswordInput');
         const toastMsg = document.getElementById('toastMsg');
         let deletingQuizId = '';
+        let editingQuizId = '';
 
         function t(key, fallback) {
             const lang = localStorage.getItem('lang') || 'vi';
@@ -329,6 +368,7 @@
                         <div class="assessment-actions">
                             <a class="mini-btn mini-primary" data-icon="👁️" title="${t('assessment_list_btn_preview','Xem đề')}" aria-label="${t('assessment_list_btn_preview','Xem đề')}" href="${previewLink}">${t('assessment_list_btn_preview','Xem đề')}</a>
                             <a class="mini-btn mini-success" data-icon="📝" title="${t('assessment_list_btn_take','Vào thi')}" aria-label="${t('assessment_list_btn_take','Vào thi')}" href="${studentLink}">${t('assessment_list_btn_take','Vào thi')}</a>
+                            <button class="mini-btn mini-warning" data-icon="✏️" title="Sửa đề" aria-label="Sửa đề" onclick="openEditModal('${escJs(it.id)}')">Sửa</button>
                             <button class="mini-btn mini-danger" data-icon="🗑️" title="${t('assessment_list_btn_delete','Xóa đề')}" aria-label="${t('assessment_list_btn_delete','Xóa đề')}" onclick="openDeleteModal('${escJs(it.id)}', '${escJs(it.title)}')">${t('assessment_list_btn_delete','Xóa đề')}</button>
                         </div>
                     </td>
@@ -350,10 +390,120 @@
             deletePasswordInput.value = '';
         }
 
+        function resetEditForm() {
+            document.getElementById('editTitleInput').value = '';
+            document.getElementById('editSchoolsWrap').innerHTML = '';
+            document.getElementById('editTitleErr').style.display = 'none';
+            document.getElementById('editSchoolsErr').style.display = 'none';
+        }
+
+        function renderEditSchoolRows(values) {
+            const wrap = document.getElementById('editSchoolsWrap');
+            wrap.innerHTML = '';
+            const arr = Array.isArray(values) && values.length ? values : [''];
+            arr.forEach((name, idx) => {
+                const row = document.createElement('div');
+                row.className = 'edit-school-row';
+                row.innerHTML = `
+                    <span class="edit-school-order">${idx + 1}</span>
+                    <input class="edit-school-input" type="text" value="${String(name || '').replace(/"/g, '&quot;')}" placeholder="Tên trường">
+                    <button type="button" class="edit-remove-school">&times;</button>
+                `;
+                wrap.appendChild(row);
+            });
+            wrap.querySelectorAll('.edit-remove-school').forEach(btn => {
+                btn.onclick = () => {
+                    const rows = wrap.querySelectorAll('.edit-school-row');
+                    if (rows.length <= 1) return;
+                    btn.closest('.edit-school-row').remove();
+                    wrap.querySelectorAll('.edit-school-order').forEach((o, i) => o.textContent = String(i + 1));
+                };
+            });
+        }
+
+        async function openEditModal(id) {
+            editingQuizId = String(id || '').trim();
+            if (!editingQuizId) return;
+            resetEditForm();
+            try {
+                const resp = await fetch(`/api/quiz/${encodeURIComponent(editingQuizId)}`);
+                const quiz = await resp.json();
+                if (!resp.ok) throw new Error(quiz?.error || 'Không tải được đề');
+                document.getElementById('editTitleInput').value = String(quiz?.quizTitle || quiz?.title || '');
+                const schools = Array.isArray(quiz?.assessmentSchools)
+                    ? quiz.assessmentSchools.map(s => String(s?.name || '').trim()).filter(Boolean)
+                    : [];
+                renderEditSchoolRows(schools);
+                editModal.style.display = 'flex';
+            } catch (e) {
+                showToast(e.message || 'Không tải được đề.', true);
+            }
+        }
+
+        function closeEditModal() {
+            editModal.style.display = 'none';
+            editingQuizId = '';
+            resetEditForm();
+        }
+
         document.getElementById('deleteCancelBtn').onclick = closeDeleteModal;
         deleteModal.addEventListener('click', (e) => {
             if (e.target === deleteModal) closeDeleteModal();
         });
+        editModal.addEventListener('click', (e) => {
+            if (e.target === editModal) closeEditModal();
+        });
+        document.getElementById('editCancelBtn').onclick = closeEditModal;
+        document.getElementById('editAddSchoolBtn').onclick = () => {
+            const wrap = document.getElementById('editSchoolsWrap');
+            const names = Array.from(wrap.querySelectorAll('.edit-school-input')).map(i => i.value);
+            names.push('');
+            renderEditSchoolRows(names);
+        };
+        document.getElementById('editSaveBtn').onclick = async () => {
+            const quizId = String(editingQuizId || '').trim();
+            if (!quizId) return;
+            const title = String(document.getElementById('editTitleInput').value || '').trim();
+            const schools = Array.from(document.querySelectorAll('#editSchoolsWrap .edit-school-input'))
+                .map((inp, i) => ({ order: i + 1, name: String(inp.value || '').trim() }))
+                .filter(x => x.name);
+            const titleErr = document.getElementById('editTitleErr');
+            const schoolErr = document.getElementById('editSchoolsErr');
+            titleErr.style.display = 'none';
+            schoolErr.style.display = 'none';
+            if (!title) {
+                titleErr.textContent = 'Tên đề không được để trống.';
+                titleErr.style.display = 'block';
+                return;
+            }
+            if (!schools.length) {
+                schoolErr.textContent = 'Cần ít nhất 1 trường.';
+                schoolErr.style.display = 'block';
+                return;
+            }
+
+            const btn = document.getElementById('editSaveBtn');
+            const oldText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Đang lưu...';
+            try {
+                const resp = await fetch(`/api/assessments/quizzes/${encodeURIComponent(quizId)}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, assessmentSchools: schools })
+                });
+                const payload = await resp.json().catch(() => ({}));
+                if (!resp.ok || !payload?.success) throw new Error(payload?.error || 'Lưu thay đổi thất bại.');
+                closeEditModal();
+                showToast('Đã lưu thay đổi.');
+                await loadList();
+            } catch (e) {
+                showToast(e.message || 'Lưu thay đổi thất bại.', true);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = oldText;
+            }
+        };
 
         document.getElementById('deleteConfirmBtn').onclick = async () => {
             const quizId = String(deletingQuizId || '').trim();

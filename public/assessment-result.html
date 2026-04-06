@@ -203,6 +203,7 @@
                         <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Họ và tên</th>
                         <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Số điện thoại</th>
                         <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Email</th>
+                        <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Địa chỉ</th>
                         <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Trường</th>
                         <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Trạng thái AI</th>
                         <th style="text-align:left; padding: 10px; border-bottom: 1px solid #e5e7eb;">Ngành gợi ý</th>
@@ -274,14 +275,22 @@
         return (en && en[key]) ? en[key] : key;
     }
 
-    function setupSchoolFilter(quiz) {
+    function setupSchoolFilter(quiz, historySchools = []) {
         const wrap = document.getElementById('attemptListSchoolFilterWrap');
         if (!wrap) return;
+        const prevValue = getSchoolFilterValue();
         wrap.innerHTML = '';
-        const schools = Array.isArray(quiz?.assessmentSchools)
+        const schoolsFromQuiz = Array.isArray(quiz?.assessmentSchools)
             ? quiz.assessmentSchools.filter(s => s && String(s.name || '').trim())
             : [];
-        schools.sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+        schoolsFromQuiz.sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+        const merged = new Set();
+        schoolsFromQuiz.forEach(s => merged.add(String(s.name || '').trim()));
+        (Array.isArray(historySchools) ? historySchools : []).forEach(s => {
+            const n = String(s || '').trim();
+            if (n) merged.add(n);
+        });
+        const schools = Array.from(merged).filter(Boolean).sort((a, b) => a.localeCompare(b, 'vi'));
 
         const onFilterChange = async () => {
             try {
@@ -300,12 +309,13 @@
             o0.value = '';
             o0.textContent = tResult('assessment_filter_all_schools');
             sel.appendChild(o0);
-            schools.forEach(s => {
+            schools.forEach(name => {
                 const o = document.createElement('option');
-                o.value = String(s.name).trim();
-                o.textContent = String(s.name).trim();
+                o.value = String(name).trim();
+                o.textContent = String(name).trim();
                 sel.appendChild(o);
             });
+            if (prevValue && schools.includes(prevValue)) sel.value = prevValue;
             sel.addEventListener('change', onFilterChange);
             wrap.appendChild(sel);
         } else {
@@ -314,6 +324,7 @@
             inp.id = 'schoolFilterFree';
             inp.placeholder = tResult('assessment_filter_school_placeholder');
             inp.style.cssText = 'padding:8px 12px; border-radius:8px; border:1px solid #e5e7eb; min-width:200px;';
+            if (prevValue) inp.value = prevValue;
             let t;
             inp.addEventListener('input', () => {
                 clearTimeout(t);
@@ -481,13 +492,18 @@
         };
     }
 
-    async function loadAttemptList() {
+    async function loadAttemptList(opts = {}) {
+        const applySchoolFilter = opts.applySchoolFilter !== false;
         const urlParams = new URLSearchParams(window.location.search);
         const quizId = urlParams.get('quizId') || urlParams.get('id');
         const email = urlParams.get('email');
         const qs = new URLSearchParams();
         if (quizId) qs.set('quizId', quizId);
         if (email) qs.set('email', email);
+        if (applySchoolFilter) {
+            const school = getSchoolFilterValue();
+            if (school) qs.set('school', school);
+        }
         qs.set('limit', '200');
         const url = quizId
             ? `/api/assessments/attempts?${qs.toString()}`
@@ -515,7 +531,7 @@
         if (!lastAttemptListItems.length) {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td colspan="${hasAnyAiError ? 7 : 6}" style="padding: 14px; color: var(--secondary); border-bottom: 1px solid #f1f5f9;">
+                <td colspan="${hasAnyAiError ? 8 : 7}" style="padding: 14px; color: var(--secondary); border-bottom: 1px solid #f1f5f9;">
                     Chưa có dữ liệu thí sinh.
                 </td>
             `;
@@ -532,6 +548,7 @@
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${esc(it.studentName || '')}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${esc(it.studentPhone || '')}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${esc(it.studentEmail || '')}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #f1f5f9;">${esc(it.studentAddress || '')}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; max-width: 220px;">${esc(it.studentSchool || '')}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; font-weight:600; color:${isAiError ? '#b91c1c' : '#047857'};">${aiStatusLabel}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap;">${esc(topMajorName)}</td>
@@ -646,7 +663,11 @@
                         if (qr.ok) quizForFilter = await qr.json();
                     } catch (_) {}
                 }
-                setupSchoolFilter(quizForFilter);
+                const allItems = await loadAttemptList({ applySchoolFilter: false });
+                const historySchools = Array.from(new Set(
+                    (allItems || []).map(it => String(it?.studentSchool || '').trim()).filter(Boolean)
+                ));
+                setupSchoolFilter(quizForFilter, historySchools);
                 const items = await loadAttemptList();
                 document.querySelector('.dashboard-grid').style.display = 'none';
                 renderAttemptList(items || []);

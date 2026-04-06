@@ -419,6 +419,44 @@ function clampNumber(n, min, max) {
     return n;
 }
 
+function normalizeSpaces(v) {
+    return String(v || '').trim().replace(/\s+/g, ' ');
+}
+
+function normalizePhoneVN(v) {
+    return String(v || '').replace(/\D/g, '');
+}
+
+function isValidEmailBasic(v) {
+    const s = String(v || '').trim().toLowerCase();
+    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s);
+}
+
+function isValidNameVN(v) {
+    const s = normalizeSpaces(v);
+    if (!s || s.length < 4 || s.length > 80) return false;
+    const words = s.split(' ').filter(Boolean);
+    if (words.length < 2) return false;
+    if (!/^[A-Za-zÀ-Ỹà-ỹ]+(?:[ '-][A-Za-zÀ-Ỹà-ỹ]+)*$/u.test(s)) return false;
+    if (words.some(w => /^([A-Za-zÀ-Ỹà-ỹ])\1{2,}$/u.test(w))) return false;
+    if (words.some(w => w.length < 2)) return false;
+    return true;
+}
+
+function validateAssessmentStudentInfo(payload) {
+    const studentName = normalizeSpaces(payload?.studentName);
+    const studentPhone = normalizePhoneVN(payload?.studentPhone);
+    const studentEmail = String(payload?.studentEmail || '').trim().toLowerCase();
+    const studentDob = String(payload?.studentDob || '').trim();
+
+    if (!isValidNameVN(studentName)) return { ok: false, error: 'Invalid student name.' };
+    if (!/^0\d{9}$/.test(studentPhone)) return { ok: false, error: 'Invalid Vietnamese phone number.' };
+    if (!isValidEmailBasic(studentEmail)) return { ok: false, error: 'Invalid email address.' };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(studentDob)) return { ok: false, error: 'Invalid date of birth format.' };
+
+    return { ok: true, studentName, studentPhone, studentEmail, studentDob };
+}
+
 /** Match answer keys whether client sent number or string (e.g. originalIndex vs "5"). */
 function getAnswerForQuestion(answers, questionId) {
     const a = answers || {};
@@ -1152,6 +1190,8 @@ app.post('/api/assessments/:quizId/submit', async (req, res) => {
         const { studentName, studentPhone, studentDob, studentAddress, studentSchool, studentCode, classCode, subjectCode, studentEmail, answers, macAddress, clientMeta } = req.body || {};
         if (!quizId) return res.status(400).json({ error: 'Missing quizId' });
         if (!answers || typeof answers !== 'object') return res.status(400).json({ error: 'Missing answers' });
+        const valid = validateAssessmentStudentInfo({ studentName, studentPhone, studentEmail, studentDob });
+        if (!valid.ok) return res.status(400).json({ error: valid.error });
 
         const quiz = await Quiz.findOne({ id: quizId });
         if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
@@ -1168,15 +1208,15 @@ app.post('/api/assessments/:quizId/submit', async (req, res) => {
 
         const attempt = await AssessmentAttempt.create({
             quizId,
-            studentName: String(studentName || ''),
-            studentPhone: String(studentPhone || ''),
-            studentDob: String(studentDob || ''),
+            studentName: valid.studentName,
+            studentPhone: valid.studentPhone,
+            studentDob: valid.studentDob,
             studentAddress: String(studentAddress || ''),
             studentSchool: String(studentSchool || ''),
             studentCode: String(studentCode || ''),
             classCode: String(classCode || ''),
             subjectCode: String(subjectCode || ''),
-            studentEmail: String(studentEmail || ''),
+            studentEmail: valid.studentEmail,
             answers,
             submittedAt: new Date(),
             clientMeta: mergedClientMeta
@@ -1237,6 +1277,8 @@ app.post('/api/submit/hybrid-ai', async (req, res) => {
         const qid = String(quizId || '').trim();
         if (!qid) return res.status(400).json({ error: 'Missing quizId' });
         if (!answers || typeof answers !== 'object') return res.status(400).json({ error: 'Missing answers' });
+        const valid = validateAssessmentStudentInfo({ studentName, studentPhone, studentEmail, studentDob });
+        if (!valid.ok) return res.status(400).json({ error: valid.error });
         console.log(`[SUBMIT_HYBRID_AI][quizId=${qid}] incoming answers=${Object.keys(answers || {}).length} student=${String(studentName || '').slice(0, 80)}`);
 
         const quiz = await Quiz.findOne({ id: qid });
@@ -1254,15 +1296,15 @@ app.post('/api/submit/hybrid-ai', async (req, res) => {
 
         const attempt = await AssessmentAttempt.create({
             quizId: qid,
-            studentName: String(studentName || ''),
-            studentPhone: String(studentPhone || ''),
-            studentDob: String(studentDob || ''),
+            studentName: valid.studentName,
+            studentPhone: valid.studentPhone,
+            studentDob: valid.studentDob,
             studentAddress: String(studentAddress || ''),
             studentSchool: String(studentSchool || ''),
             studentCode: String(studentCode || ''),
             classCode: String(classCode || ''),
             subjectCode: String(subjectCode || ''),
-            studentEmail: String(studentEmail || ''),
+            studentEmail: valid.studentEmail,
             answers,
             submittedAt: new Date(),
             clientMeta: mergedClientMeta
@@ -1457,6 +1499,7 @@ app.get('/api/assessments/attempts', async (req, res) => {
                 classCode: a.classCode || '',
                 subjectCode: a.subjectCode || '',
                 studentEmail: a.studentEmail || '',
+                studentAddress: a.studentAddress || '',
                 studentSchool: a.studentSchool || '',
                 submittedAt: a.submittedAt,
                 clientMeta: a.clientMeta || {},
@@ -1804,6 +1847,61 @@ app.get('/api/quiz/:id', async (req, res) => {
         } else {
             res.status(404).json({ error: 'Quiz not found' });
         }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Update assessment quiz metadata (title + school list)
+app.patch('/api/assessments/quizzes/:id', async (req, res) => {
+    try {
+        const quizId = String(req.params.id || '').trim();
+        if (!quizId) return res.status(400).json({ error: 'Missing quiz id' });
+
+        const quiz = await Quiz.findOne({ id: quizId });
+        if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
+        if (!quiz.assessmentEnabled) return res.status(400).json({ error: 'Quiz is not assessment type' });
+
+        const title = String(req.body?.title || '').trim();
+        let schoolsRaw = req.body?.assessmentSchools;
+
+        if (schoolsRaw === undefined || schoolsRaw === null) schoolsRaw = [];
+        if (typeof schoolsRaw === 'string') {
+            try { schoolsRaw = JSON.parse(schoolsRaw); } catch (_) { schoolsRaw = []; }
+        }
+        if (!Array.isArray(schoolsRaw)) schoolsRaw = [];
+
+        const assessmentSchools = schoolsRaw
+            .map((x, i) => {
+                if (typeof x === 'string') return { order: i + 1, name: String(x).trim() };
+                const name = String(x?.name || '').trim();
+                const order = Number(x?.order);
+                return { order: Number.isFinite(order) ? order : i + 1, name };
+            })
+            .filter(x => x.name.length > 0)
+            .sort((a, b) => a.order - b.order)
+            .map((x, i) => ({ order: i + 1, name: x.name }));
+
+        if (assessmentSchools.length === 0) {
+            return res.status(400).json({ error: 'Assessment must have at least one school.' });
+        }
+
+        if (title) {
+            quiz.title = title;
+            quiz.quizTitle = title;
+        }
+        quiz.assessmentSchools = assessmentSchools;
+        await quiz.save();
+
+        res.json({
+            success: true,
+            item: {
+                id: String(quiz.id || ''),
+                title: String(quiz.quizTitle || quiz.title || 'Untitled Assessment'),
+                assessmentSchools
+            }
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Server error' });
