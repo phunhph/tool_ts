@@ -942,50 +942,44 @@
                 }
             }
 
-            // Always show time info
-            const timeInfo = document.createElement('div');
-            timeInfo.id = 'timeInfo';
-            // Make sticky
-            timeInfo.style.position = 'sticky';
-            timeInfo.style.top = '0';
-            timeInfo.style.zIndex = '1000';
-            timeInfo.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
+            // Only show timer bar when there is an actual countdown constraint.
+            // For untimed quizzes, hide timer entirely as requested.
+            if (isTimed || effectiveEndTime) {
+                const timeInfo = document.createElement('div');
+                timeInfo.id = 'timeInfo';
+                // Make sticky
+                timeInfo.style.position = 'sticky';
+                timeInfo.style.top = '0';
+                timeInfo.style.zIndex = '1000';
+                timeInfo.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
 
-            timeInfo.style.marginBottom = '1rem';
-            timeInfo.style.padding = '10px 15px';
-            timeInfo.style.backgroundColor = '#e8f4f8';
-            timeInfo.style.borderBottom = '3px solid #3498db';
-            timeInfo.style.borderTop = '1px solid #ddd'; // Visual separation if scrolling
-            timeInfo.style.borderRadius = '0 0 5px 5px';
-            timeInfo.style.color = '#2c3e50';
-            timeInfo.style.display = 'flex';
-            timeInfo.style.justifyContent = 'space-between';
-            timeInfo.style.alignItems = 'center';
-            timeInfo.style.fontSize = '1.1rem'; // Larger text
+                timeInfo.style.marginBottom = '1rem';
+                timeInfo.style.padding = '10px 15px';
+                timeInfo.style.backgroundColor = '#e8f4f8';
+                timeInfo.style.borderBottom = '3px solid #3498db';
+                timeInfo.style.borderTop = '1px solid #ddd'; // Visual separation if scrolling
+                timeInfo.style.borderRadius = '0 0 5px 5px';
+                timeInfo.style.color = '#2c3e50';
+                timeInfo.style.display = 'flex';
+                timeInfo.style.justifyContent = 'space-between';
+                timeInfo.style.alignItems = 'center';
+                timeInfo.style.fontSize = '1.1rem'; // Larger text
 
-            // Info text (left side)
-            const rangeText = document.createElement('span');
-            let infoText = "";
-            if (isTimed) {
-                infoText = `Limit: ${quiz.timeLimit}m`;
-            } else {
-                infoText = "Untimed Quiz";
-            }
-            rangeText.innerText = infoText;
-            rangeText.style.fontSize = '0.9rem';
-            timeInfo.appendChild(rangeText);
+                // Info text (left side)
+                const rangeText = document.createElement('span');
+                rangeText.innerText = isTimed ? `Limit: ${quiz.timeLimit}m` : 'Countdown';
+                rangeText.style.fontSize = '0.9rem';
+                timeInfo.appendChild(rangeText);
 
-            // Timer display (right side)
-            const timerSpan = document.createElement('span');
-            timerSpan.id = 'countdownTimer';
-            timerSpan.style.fontWeight = 'bold';
-            timerSpan.style.fontSize = '1.2rem';
-            timerSpan.style.backgroundColor = '#fff';
-            timerSpan.style.padding = '5px 10px';
-            timerSpan.style.borderRadius = '5px';
-            timerSpan.style.border = '1px solid #ddd';
-
-            if (isTimed) {
+                // Timer display (right side)
+                const timerSpan = document.createElement('span');
+                timerSpan.id = 'countdownTimer';
+                timerSpan.style.fontWeight = 'bold';
+                timerSpan.style.fontSize = '1.2rem';
+                timerSpan.style.backgroundColor = '#fff';
+                timerSpan.style.padding = '5px 10px';
+                timerSpan.style.borderRadius = '5px';
+                timerSpan.style.border = '1px solid #ddd';
                 timerSpan.style.color = '#c0392b'; // Red for countdown
                 timeInfo.appendChild(timerSpan);
                 container.appendChild(timeInfo); // Append to DOM first
@@ -1001,11 +995,7 @@
                     // Do NOT return; continue rendering questions so user can submit.
                 }
             } else {
-                timerSpan.style.color = '#27ae60'; // Green for elapsed
-                timeInfo.appendChild(timerSpan);
-                container.appendChild(timeInfo); // Append to DOM first
                 window.quizTimeExpired = false;
-                startTimer(startTimeObj, false);
             }
 
             // Tag original index FIRST
