@@ -408,6 +408,19 @@
                         </label>
                     </div>
                 </div>
+                <div class="full">
+                    <label for="classCode" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
+                        <span data-i18n="label_student_grade">Grade</span>
+                        <span style="color: red;">*</span>
+                    </label>
+                    <select id="classCode"
+                        style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px; background: #fff;"
+                        required>
+                        <option value="" disabled selected data-i18n="ph_student_grade"></option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                    </select>
+                </div>
                 <div class="full" id="studentSchoolFieldWrap">
                     <label for="studentSchool" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
                         <span data-i18n="label_student_school">School (High school)</span>
@@ -1295,7 +1308,7 @@
         function saveQuizState() {
             if (!quizIdForStorage) return;
 
-            const state = {
+                const state = {
                 studentName: document.getElementById('studentName').value,
                 studentPhone: document.getElementById('studentPhone').value,
                 studentEmail: document.getElementById('studentEmail').value,
@@ -1310,6 +1323,7 @@
                 studentAddress: getStudentAddressValue(),
                 studentGrade: getSelectedStudentGrade(),
                 studentSchool: document.getElementById('studentSchool').value,
+                classCode: document.getElementById('classCode').value,
                 answers: {}
             };
 
@@ -1364,6 +1378,7 @@
                     if (gEl) gEl.checked = true;
                 }
                 if (state.studentSchool) document.getElementById('studentSchool').value = state.studentSchool;
+                if (state.classCode) document.getElementById('classCode').value = state.classCode;
 
                 // Restore answers
                 if (state.answers) {
@@ -1386,7 +1401,11 @@
 
         function attachAutoSave() {
             // Attach to student inputs (change covers <select> for school)
+<<<<<<< HEAD
             ['studentName', 'studentPhone', 'studentEmail', 'studentDob', 'studentProvince', 'studentDistrict', 'studentSchool'].forEach(id => {
+=======
+            ['studentName', 'studentPhone', 'studentEmail', 'studentDob', 'studentAddress', 'studentSchool', 'classCode'].forEach(id => {
+>>>>>>> 60304b12660e421c6a991b7caf315f8d1ed76155
                 const el = document.getElementById(id);
                 if (!el) return;
                 el.addEventListener('input', () => {
@@ -1443,6 +1462,7 @@
             const studentAddress = getStudentAddressValue();
             const studentGrade = getSelectedStudentGrade();
             const studentSchool = document.getElementById('studentSchool').value.trim();
+<<<<<<< HEAD
             document.getElementById('studentName').value = studentName;
             document.getElementById('studentPhone').value = studentPhone;
             document.getElementById('studentEmail').value = studentEmail;
@@ -1497,6 +1517,13 @@
                     setFieldError('studentDob', lang === 'vi'
                         ? `Lớp ${studentGrade} yêu cầu thí sinh từ ${minAge} tuổi trở lên.`
                         : `Grade ${studentGrade} requires age ${minAge}+.`);
+=======
+            const classCode = document.getElementById('classCode').value.trim();
+
+            if (!isAuto) {
+                if (!studentName || !studentPhone || !studentEmail || !studentDob || !studentAddress || !studentSchool || !classCode) {
+                    alert('Please fill in all student information fields (Name, Phone, Email, DOB, Address, Grade, School).');
+>>>>>>> 60304b12660e421c6a991b7caf315f8d1ed76155
                     document.getElementById('studentInfoSection').scrollIntoView({ behavior: 'smooth' });
                     return;
                 }
@@ -1585,6 +1612,7 @@
                         studentAddress: studentAddress,
                         studentClass: studentGrade,
                         studentSchool: studentSchool,
+                        classCode: classCode,
                         answers: answers,
                         macAddress: deviceId
                     })
