@@ -1595,6 +1595,7 @@ app.get('/api/assessments/attempts', async (req, res) => {
         if (email) q.studentEmail = email;
         if (school) q.studentSchool = school;
 
+        const totalCount = await AssessmentAttempt.countDocuments(q);
         const attempts = await AssessmentAttempt.find(q)
             .sort({ submittedAt: -1 })
             .skip(skip)
@@ -1627,7 +1628,7 @@ app.get('/api/assessments/attempts', async (req, res) => {
             };
         }));
 
-        res.json({ success: true, total: withAi.length, items: withAi });
+        res.json({ success: true, total: totalCount, items: withAi });
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: 'Server error' });

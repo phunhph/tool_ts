@@ -214,6 +214,7 @@
                 <tbody></tbody>
             </table>
         </div>
+        <div id="attemptPagination" style="display:none; margin-top:12px; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;"></div>
     </div>
 
     <div class="dashboard-grid">
@@ -259,6 +260,9 @@
 <script>
     let lastAttemptListItems = [];
     let currentAttemptId = '';
+    let currentAttemptPage = 1;
+    const ATTEMPT_PAGE_SIZE = 25;
+    let attemptTotalItems = 0;
 
     function getSchoolFilterValue() {
         const sel = document.getElementById('schoolFilterSelect');
@@ -295,6 +299,7 @@
 
         const onFilterChange = async () => {
             try {
+                currentAttemptPage = 1;
                 const items = await loadAttemptList();
                 renderAttemptList(items || []);
             } catch (e) {
@@ -504,6 +509,8 @@
 
     async function loadAttemptList(opts = {}) {
         const applySchoolFilter = opts.applySchoolFilter !== false;
+        const page = Math.max(1, parseInt(String(opts.page || currentAttemptPage), 10) || 1);
+        const pageSize = Math.max(1, Math.min(100, parseInt(String(opts.pageSize || ATTEMPT_PAGE_SIZE), 10) || ATTEMPT_PAGE_SIZE));
         const urlParams = new URLSearchParams(window.location.search);
         const quizId = urlParams.get('quizId') || urlParams.get('id');
         const email = urlParams.get('email');
@@ -514,14 +521,57 @@
             const school = getSchoolFilterValue();
             if (school) qs.set('school', school);
         }
-        qs.set('limit', '200');
+        qs.set('limit', String(pageSize));
+        qs.set('skip', String((page - 1) * pageSize));
         const url = quizId
             ? `/api/assessments/attempts?${qs.toString()}`
             : `/api/assessments/attempts?${qs.toString()}`;
         const resp = await fetch(url);
         const payload = await resp.json();
         if (!resp.ok) throw new Error(payload?.error || 'Failed to load attempts');
+        attemptTotalItems = Number(payload?.total || 0);
+        currentAttemptPage = page;
         return payload?.items || [];
+    }
+
+    function renderAttemptPagination() {
+        const wrap = document.getElementById('attemptPagination');
+        if (!wrap) return;
+        const totalPages = Math.max(1, Math.ceil(attemptTotalItems / ATTEMPT_PAGE_SIZE));
+        if (attemptTotalItems <= ATTEMPT_PAGE_SIZE) {
+            wrap.style.display = 'none';
+            wrap.innerHTML = '';
+            return;
+        }
+        const from = attemptTotalItems ? ((currentAttemptPage - 1) * ATTEMPT_PAGE_SIZE + 1) : 0;
+        const to = Math.min(attemptTotalItems, currentAttemptPage * ATTEMPT_PAGE_SIZE);
+        const prevDisabled = currentAttemptPage <= 1;
+        const nextDisabled = currentAttemptPage >= totalPages;
+        wrap.style.display = 'flex';
+        wrap.innerHTML = `
+            <div style="color: var(--secondary); font-size: 0.92rem;">Hiển thị ${from}-${to} / ${attemptTotalItems} bản ghi</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <button id="attemptPagePrev" ${prevDisabled ? 'disabled' : ''} style="padding:8px 12px; border-radius:8px; border:1px solid #d1d5db; background:${prevDisabled ? '#f3f4f6' : '#fff'}; cursor:${prevDisabled ? 'not-allowed' : 'pointer'};">Trước</button>
+                <span style="font-size:0.92rem; color:#334155;">Trang ${currentAttemptPage}/${totalPages}</span>
+                <button id="attemptPageNext" ${nextDisabled ? 'disabled' : ''} style="padding:8px 12px; border-radius:8px; border:1px solid #d1d5db; background:${nextDisabled ? '#f3f4f6' : '#fff'}; cursor:${nextDisabled ? 'not-allowed' : 'pointer'};">Sau</button>
+            </div>
+        `;
+        const prevBtn = document.getElementById('attemptPagePrev');
+        const nextBtn = document.getElementById('attemptPageNext');
+        if (prevBtn) {
+            prevBtn.onclick = async () => {
+                if (currentAttemptPage <= 1) return;
+                const items = await loadAttemptList({ page: currentAttemptPage - 1 });
+                renderAttemptList(items || []);
+            };
+        }
+        if (nextBtn) {
+            nextBtn.onclick = async () => {
+                if (currentAttemptPage >= totalPages) return;
+                const items = await loadAttemptList({ page: currentAttemptPage + 1 });
+                renderAttemptList(items || []);
+            };
+        }
     }
 
     function renderAttemptList(items) {
@@ -601,6 +651,7 @@
         });
 
         card.style.display = 'block';
+        renderAttemptPagination();
 
         const exportBtn = document.getElementById('exportAttemptsBtn');
         if (exportBtn) {
@@ -674,7 +725,7 @@
                         if (qr.ok) quizForFilter = await qr.json();
                     } catch (_) {}
                 }
-                const allItems = await loadAttemptList({ applySchoolFilter: false });
+                const allItems = await loadAttemptList({ applySchoolFilter: false, page: 1, pageSize: 200 });
                 const historySchools = Array.from(new Set(
                     (allItems || []).map(it => String(it?.studentSchool || '').trim()).filter(Boolean)
                 ));
