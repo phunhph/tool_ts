@@ -72,6 +72,9 @@ function parseGeminiApiKeys(raw) {
 const GEMINI_API_KEYS = parseGeminiApiKeys(process.env.GEMINI_API_KEYS);
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const GEMINI_MAX_OUTPUT_TOKENS = Math.max(512, Math.min(8192, parseInt(String(process.env.GEMINI_MAX_OUTPUT_TOKENS || '3072'), 10) || 3072));
+// Toggle this to enable/disable "1 device can submit only once per assessment quiz".
+// true = block repeated submissions from the same device, false = allow.
+const ENABLE_ASSESSMENT_DEVICE_BLOCK = true;
 
 // Connect to MongoDB and ensure default admin exists before accepting requests
 let ensureAdminPromise = null;
@@ -151,7 +154,14 @@ app.use((req, res, next) => {
 app.use(compression());
 console.log('Static directory:', path.join(__dirname, 'public'));
 app.use(express.static(path.join(__dirname, 'public'), {
-    maxAge: '1d' // Cache static assets for 1 day
+    maxAge: 0,
+    etag: true,
+    setHeaders: (res) => {
+        // Ensure clients always revalidate after deploy; avoid requiring Ctrl+F5.
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+    }
 }));
 app.use(express.json());
 app.use('/api/', apiLimiter);
@@ -403,6 +413,9 @@ app.get('/api/assessments/config/:quizId', async (req, res) => {
 
         res.json({ quizId, version: cfg.version, questions: cfg.questions || [] });
     } catch (e) {
+        if (e && e.code === 11000 && String(e.message || '').includes('deviceFingerprint')) {
+            return res.status(409).json({ error: 'Mỗi thiết bị chỉ được làm bài 1 lần cho bài test này.' });
+        }
         console.error(e);
         res.status(500).json({ error: 'Server error' });
     }
@@ -455,6 +468,21 @@ function validateAssessmentStudentInfo(payload) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(studentDob)) return { ok: false, error: 'Invalid date of birth format.' };
 
     return { ok: true, studentName, studentPhone, studentEmail, studentDob };
+}
+
+function buildAssessmentDeviceFingerprint(req, rawClientMeta, rawMacAddress) {
+    const clientMeta = rawClientMeta && typeof rawClientMeta === 'object' ? rawClientMeta : {};
+    const mac = String(rawMacAddress || clientMeta.macAddress || '').trim().toLowerCase();
+    const ua = String(req.headers['user-agent'] || clientMeta.userAgent || '').trim().toLowerCase();
+    const acceptLang = String(req.headers['accept-language'] || clientMeta.acceptLanguage || '').trim().toLowerCase();
+    const platform = String(clientMeta.platform || '').trim().toLowerCase();
+    const timezone = String(clientMeta.timezone || '').trim().toLowerCase();
+    const screen = String(clientMeta.screen || '').trim().toLowerCase();
+    const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+    const ip = String(forwarded || req.socket.remoteAddress || req.ip || clientMeta.ip || '').trim().toLowerCase();
+    const raw = [mac, ua, acceptLang, platform, timezone, screen, ip].filter(Boolean).join('|');
+    if (!raw) return '';
+    return crypto.createHash('sha256').update(raw).digest('hex');
 }
 
 /** Match answer keys whether client sent number or string (e.g. originalIndex vs "5"). */
@@ -715,7 +743,9 @@ function baselineMajorsFromSkills(skillScores) {
         { majorName: 'Tiếng Hàn Quốc', weights: { language: 1.0, communication: 0.6 } },
         { majorName: 'Tiếng Anh', weights: { language: 1.0, communication: 0.6 } },
         { majorName: 'Tiếng Nhật', weights: { language: 1.0, communication: 0.6 } },
-        { majorName: 'Dược', weights: { detail: 1.0, analysis: 0.6, logical: 0.35 } }
+        // Dược should not be over-selected from only one "detail" signal.
+        // Require a more balanced profile leaning on analysis/logical in addition to carefulness.
+        { majorName: 'Dược', weights: { detail: 0.58, analysis: 0.9, logical: 0.72, communication: 0.2 } }
     ];
 
     const scored = candidates.map(c => {
@@ -732,7 +762,16 @@ function baselineMajorsFromSkills(skillScores) {
             sum += v * wk;
             w += wk;
         }
-        const score = w > 0 ? sum / w : 0;
+        let score = w > 0 ? sum / w : 0;
+        // Anti-bias for Pharmacy: if only "detail" is strong but analysis/logical are weak,
+        // reduce score so Dược does not dominate from a single meticulousness question.
+        if (c.majorName === 'Dược') {
+            const detail = get('detail');
+            const analysis = getAny(['analysis', 'math']);
+            const logical = getAny(['logical', 'logic']);
+            const hasSingleSignalBias = detail >= 70 && analysis < 50 && logical < 50;
+            if (hasSingleSignalBias) score = score * 0.72;
+        }
         return {
             majorName: c.majorName,
             score: Math.round(score),
@@ -922,6 +961,7 @@ async function runHybridAi({ quizId, attemptId, answers, configQuestions }) {
         '- Mỗi ngành phải có reasons gắn với bằng chứng cụ thể (ưu tiên nêu Q{order}).',
         '- Không dùng lập luận chung chung áp cho mọi thí sinh, lập luận cẩn thận ổn định có sự thuyết phục và có căn cứ thị trường xu hướng.',
         '- Nếu thuộc nhóm CNTT/Kinh doanh/Kỹ thuật, phải ưu tiên trả ngành con cụ thể (ví dụ Web/Mobile/Game/AI...) thay vì tên nhóm chung.',
+        '- Với ngành Dược: KHÔNG được chọn chỉ dựa vào 1 tín hiệu "tỉ mỉ/cẩn thận". Chỉ chọn khi có thêm bằng chứng rõ về phân tích/logic từ nhiều câu (ưu tiên >=2 bằng chứng độc lập).',
         '- Không được lấy mặc định một chuyên ngành nào cả cần phải có căn cứ tư input là các câu hỏi, cũng như phán đoán thị trường để đưa ra các gợi ý chuyên ngành phù hợp.',
         '- Bỏ qua mọi ngành "(dự kiến)" hoặc chưa tuyển sinh ổn định.',
         '- Score phải có phân hạng rõ; tránh 90/90/90 nếu không có bằng chứng tương đương.',
@@ -1216,6 +1256,15 @@ app.post('/api/assessments/:quizId/submit', async (req, res) => {
             userAgent: String(req.headers['user-agent'] || ''),
             ip: String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip || '')
         };
+        const deviceFingerprint = ENABLE_ASSESSMENT_DEVICE_BLOCK
+            ? buildAssessmentDeviceFingerprint(req, mergedClientMeta, macAddress)
+            : '';
+        if (ENABLE_ASSESSMENT_DEVICE_BLOCK && deviceFingerprint) {
+            const existed = await AssessmentAttempt.findOne({ quizId, deviceFingerprint }).select('_id').lean();
+            if (existed) {
+                return res.status(409).json({ error: 'Mỗi thiết bị chỉ được làm bài 1 lần cho bài test này.' });
+            }
+        }
 
         const attempt = await AssessmentAttempt.create({
             quizId,
@@ -1230,7 +1279,8 @@ app.post('/api/assessments/:quizId/submit', async (req, res) => {
             studentEmail: valid.studentEmail,
             answers,
             submittedAt: new Date(),
-            clientMeta: mergedClientMeta
+            clientMeta: mergedClientMeta,
+            deviceFingerprint
         });
 
         const ai = await runHybridAiWithAutoRetry({ quizId, attemptId: attempt._id, answers, configQuestions: cfg.questions });
@@ -1304,6 +1354,15 @@ app.post('/api/submit/hybrid-ai', async (req, res) => {
             userAgent: String(req.headers['user-agent'] || ''),
             ip: String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip || '')
         };
+        const deviceFingerprint = ENABLE_ASSESSMENT_DEVICE_BLOCK
+            ? buildAssessmentDeviceFingerprint(req, mergedClientMeta, macAddress)
+            : '';
+        if (ENABLE_ASSESSMENT_DEVICE_BLOCK && deviceFingerprint) {
+            const existed = await AssessmentAttempt.findOne({ quizId: qid, deviceFingerprint }).select('_id').lean();
+            if (existed) {
+                return res.status(409).json({ error: 'Mỗi thiết bị chỉ được làm bài 1 lần cho bài test này.' });
+            }
+        }
 
         const attempt = await AssessmentAttempt.create({
             quizId: qid,
@@ -1318,7 +1377,8 @@ app.post('/api/submit/hybrid-ai', async (req, res) => {
             studentEmail: valid.studentEmail,
             answers,
             submittedAt: new Date(),
-            clientMeta: mergedClientMeta
+            clientMeta: mergedClientMeta,
+            deviceFingerprint
         });
 
         const ai = await runHybridAiWithAutoRetry({ quizId: qid, attemptId: attempt._id, answers, configQuestions: cfg.questions });
@@ -1365,6 +1425,9 @@ app.post('/api/submit/hybrid-ai', async (req, res) => {
             trendSignals: run.trendSignals
         });
     } catch (e) {
+        if (e && e.code === 11000 && String(e.message || '').includes('deviceFingerprint')) {
+            return res.status(409).json({ error: 'Mỗi thiết bị chỉ được làm bài 1 lần cho bài test này.' });
+        }
         console.error('[SUBMIT_HYBRID_AI] failed', {
             message: e?.message || 'Unknown error',
             stack: e?.stack || ''

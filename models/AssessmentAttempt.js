@@ -18,10 +18,15 @@ const assessmentAttemptSchema = new mongoose.Schema({
 
     submittedAt: { type: Date, default: Date.now, index: true },
     sheetsExportedAt: { type: Date, default: null, index: true },
-    clientMeta: { type: mongoose.Schema.Types.Mixed, default: {} }
+    clientMeta: { type: mongoose.Schema.Types.Mixed, default: {} },
+    deviceFingerprint: { type: String, default: '', index: true }
 });
 
 assessmentAttemptSchema.index({ quizId: 1, submittedAt: -1 });
+assessmentAttemptSchema.index(
+    { quizId: 1, deviceFingerprint: 1 },
+    { unique: true, partialFilterExpression: { deviceFingerprint: { $type: 'string', $ne: '' } } }
+);
 
 module.exports = mongoose.model('AssessmentAttempt', assessmentAttemptSchema);
 
