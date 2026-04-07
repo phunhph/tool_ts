@@ -1436,6 +1436,49 @@ app.post('/api/submit/hybrid-ai', async (req, res) => {
     }
 });
 
+// Lightweight check: has this device already submitted this assessment quiz?
+app.post('/api/assessments/:quizId/check-device', async (req, res) => {
+    try {
+        if (!ENABLE_ASSESSMENT_DEVICE_BLOCK) {
+            return res.json({ blocked: false });
+        }
+        const quizId = String(req.params.quizId || '').trim();
+        if (!quizId) return res.status(400).json({ error: 'Missing quizId' });
+
+        const quiz = await Quiz.findOne({ id: quizId });
+        if (!quiz || !quiz.assessmentEnabled) {
+            return res.status(404).json({ error: 'Quiz not found or not assessment enabled' });
+        }
+
+        const clientMeta = typeof req.body?.clientMeta === 'object' ? req.body.clientMeta : {};
+        const macAddress = String(req.body?.macAddress || '').trim();
+        const mergedClientMeta = {
+            ...(clientMeta || {}),
+            macAddress: macAddress ? String(macAddress) : undefined,
+            userAgent: String(req.headers['user-agent'] || ''),
+            ip: String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip || '')
+        };
+        const deviceFingerprint = buildAssessmentDeviceFingerprint(req, mergedClientMeta, macAddress);
+        if (!deviceFingerprint) {
+            return res.json({ blocked: false });
+        }
+        const existed = await AssessmentAttempt.findOne({ quizId, deviceFingerprint }).select('_id').lean();
+        if (existed) {
+            return res.json({
+                blocked: true,
+                message: 'Mỗi thiết bị chỉ được làm bài 1 lần cho bài test này.'
+            });
+        }
+        return res.json({ blocked: false });
+    } catch (e) {
+        console.error('[CHECK_DEVICE_ASSESSMENT] failed', {
+            message: e?.message || 'Unknown error',
+            stack: e?.stack || ''
+        });
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // Get attempt detail (answers + config + ai run)
 app.get('/api/assessments/attempts/:attemptId', async (req, res) => {
     try {

@@ -862,6 +862,28 @@
             }
 
             try {
+                // Early device-block check so user biết trước khi làm bài
+                try {
+                    const checkResp = await fetch(`/api/assessments/${encodeURIComponent(quizId)}/check-device`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ clientMeta: { timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '' } })
+                    });
+                    if (checkResp.ok) {
+                        const checkPayload = await checkResp.json().catch(() => ({}));
+                        if (checkPayload && checkPayload.blocked) {
+                            const msg = checkPayload.message || 'Thiết bị của bạn đã làm bài test này trước đó.';
+                            const container = document.getElementById('quizContainer');
+                            container.innerHTML = `<div style="text-align: center; color: #c0392b; padding: 2rem; font-size:1.05rem;">${escapeHTML(msg)}</div>`;
+                            document.getElementById('studentInfoSection').classList.add('hidden');
+                            document.getElementById('submitSection').classList.add('hidden');
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Device check failed, continue anyway', e);
+                }
+
                 const response = await fetch(`/api/quiz/${quizId}`);
                 if (!response.ok) throw new Error('Quiz not found');
 
