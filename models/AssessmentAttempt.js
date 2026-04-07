@@ -17,6 +17,7 @@ const assessmentAttemptSchema = new mongoose.Schema({
     answers: { type: mongoose.Schema.Types.Mixed, required: true },
 
     submittedAt: { type: Date, default: Date.now, index: true },
+    sheetsExportedAt: { type: Date, default: null, index: true },
     clientMeta: { type: mongoose.Schema.Types.Mixed, default: {} }
 });
 

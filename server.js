@@ -1113,6 +1113,17 @@ ${promptText}
     }
 }
 
+async function runHybridAiWithAutoRetry({ quizId, attemptId, answers, configQuestions }) {
+    let ai = await runHybridAi({ quizId, attemptId, answers, configQuestions });
+    if (ai && ai.fallbackUsed) {
+        console.warn(`[HYBRID_AI][quizId=${quizId || '-'}][attemptId=${attemptId ? String(attemptId) : '-'}] auto_retry reason=fallback_used`);
+        const retryAi = await runHybridAi({ quizId, attemptId, answers, configQuestions });
+        // Keep the latest retry payload; this lets admin inspect freshest error context if retry still fails.
+        ai = retryAi;
+    }
+    return ai;
+}
+
 function buildFallbackAssessmentConfigFromQuiz(quiz) {
     const qs = Array.isArray(quiz?.questions) ? quiz.questions : [];
     // Map each quiz question into an "assessment config question" shape so hybrid-ai can run
@@ -1222,7 +1233,7 @@ app.post('/api/assessments/:quizId/submit', async (req, res) => {
             clientMeta: mergedClientMeta
         });
 
-        const ai = await runHybridAi({ quizId, attemptId: attempt._id, answers, configQuestions: cfg.questions });
+        const ai = await runHybridAiWithAutoRetry({ quizId, attemptId: attempt._id, answers, configQuestions: cfg.questions });
         const run = await AssessmentAiRun.create({
             attemptId: attempt._id,
             quizId,
@@ -1244,7 +1255,7 @@ app.post('/api/assessments/:quizId/submit', async (req, res) => {
             attemptId: attempt._id,
             aiRunId: run._id,
             quizId,
-            aiStatus: run.provider === 'gemini' && !!run.fallbackUsed ? 'error' : 'ok',
+            aiStatus: !!run.fallbackUsed ? 'error' : 'ok',
             student: {
                 studentName: attempt.studentName,
                 studentPhone: attempt.studentPhone,
@@ -1310,7 +1321,7 @@ app.post('/api/submit/hybrid-ai', async (req, res) => {
             clientMeta: mergedClientMeta
         });
 
-        const ai = await runHybridAi({ quizId: qid, attemptId: attempt._id, answers, configQuestions: cfg.questions });
+        const ai = await runHybridAiWithAutoRetry({ quizId: qid, attemptId: attempt._id, answers, configQuestions: cfg.questions });
         console.log(`[SUBMIT_HYBRID_AI][quizId=${qid}][attemptId=${attempt._id}] ai_done fallbackUsed=${!!ai?.fallbackUsed} model=${ai?.modelName || ''} latencyMs=${Number(ai?.latencyMs || 0)}`);
   
         const run = await AssessmentAiRun.create({
@@ -1334,7 +1345,7 @@ app.post('/api/submit/hybrid-ai', async (req, res) => {
             attemptId: attempt._id,
             aiRunId: run._id,
             quizId: qid,
-            aiStatus: run.provider === 'gemini' && !!run.fallbackUsed ? 'error' : 'ok',
+            aiStatus: !!run.fallbackUsed ? 'error' : 'ok',
             student: {
                 studentName: attempt.studentName,
                 studentPhone: attempt.studentPhone,
@@ -1372,7 +1383,7 @@ app.get('/api/assessments/attempts/:attemptId', async (req, res) => {
         const cfg = await AssessmentConfig.findOne({ quizId: attempt.quizId }).sort({ version: -1, createdAt: -1 }).lean();
         const run = await AssessmentAiRun.findOne({ attemptId: attempt._id }).sort({ createdAt: -1 }).lean();
         if (!run) return res.status(404).json({ error: 'AI result not found' });
-        const aiStatus = run.provider === 'gemini' && !!run.fallbackUsed ? 'error' : 'ok';
+        const aiStatus = !!run.fallbackUsed ? 'error' : 'ok';
 
         res.json({
             attempt,
@@ -1402,7 +1413,7 @@ app.post('/api/assessments/attempts/:attemptId/retry-ai', async (req, res) => {
         if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
 
         const cfg = await ensureAssessmentConfigWithTags({ quizId: attempt.quizId, quiz });
-        const ai = await runHybridAi({
+        const ai = await runHybridAiWithAutoRetry({
             quizId: attempt.quizId,
             attemptId: attempt._id,
             answers: attempt.answers || {},
@@ -1448,7 +1459,7 @@ app.post('/api/assessments/attempts/:attemptId/retry-ai', async (req, res) => {
             success: true,
             attemptId: attempt._id,
             aiRunId: run._id,
-            aiStatus: run.provider === 'gemini' && !!run.fallbackUsed ? 'error' : 'ok',
+            aiStatus: !!run.fallbackUsed ? 'error' : 'ok',
             derivedSkillScores: run.derivedSkillScores,
             suggestedMajors: run.suggestedMajors,
             explanationSummary: run.explanationSummary,
@@ -1488,7 +1499,7 @@ app.get('/api/assessments/attempts', async (req, res) => {
             const run = await AssessmentAiRun.findOne({ attemptId: a._id }).sort({ createdAt: -1 }).lean();
             const top = run?.suggestedMajors?.[0] || null;
             const aiStatus = run
-                ? (run.provider === 'gemini' && !!run.fallbackUsed ? 'error' : 'ok')
+                ? (!!run.fallbackUsed ? 'error' : 'ok')
                 : 'missing';
             return {
                 attemptId: a._id,
@@ -1579,18 +1590,39 @@ async function appendRowsToGoogleSheetsDailyTab({ rows, dayDate }) {
     }
 
     // Always append data rows only; header is written once when sheet is first created.
+    // De-duplicate by AttemptId (column A) to make export idempotent.
     const payloadRows = rows.slice(1);
+    let uniqueRows = payloadRows;
     if (payloadRows.length > 0) {
+        const existingColA = await sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range: `${tabName}!A:A`
+        }).catch(() => ({ data: { values: [] } }));
+        const existedKeys = new Set(
+            (existingColA?.data?.values || [])
+                .flat()
+                .map(v => String(v || '').trim())
+                .filter(Boolean)
+        );
+        uniqueRows = payloadRows.filter(r => {
+            const key = String((Array.isArray(r) ? r[0] : '') || '').trim();
+            if (!key) return true;
+            return !existedKeys.has(key);
+        });
+    }
+    if (uniqueRows.length > 0) {
         await sheets.spreadsheets.values.append({
             spreadsheetId,
             range: `${tabName}!A1`,
             valueInputOption: 'RAW',
             insertDataOption: 'INSERT_ROWS',
-            requestBody: { values: payloadRows }
+            requestBody: { values: uniqueRows }
         });
     }
-
-    return { tabName, spreadsheetId, appendedRows: payloadRows.length };
+    const appendedIds = uniqueRows
+        .map(r => String((Array.isArray(r) ? r[0] : '') || '').trim())
+        .filter(Boolean);
+    return { tabName, spreadsheetId, appendedRows: uniqueRows.length, appendedIds };
 }
 
 // Export attempts as CSV (full student info + AI result) for Google Sheets
@@ -1613,6 +1645,7 @@ app.get('/api/assessments/attempts-export', async (req, res) => {
             .lean();
 
         const headers = [
+            'AttemptId',
             'StudentName',
             'StudentPhone',
             'StudentEmail',
@@ -1620,7 +1653,9 @@ app.get('/api/assessments/attempts-export', async (req, res) => {
             'StudentAddress',
             'StudentSchool',
             'ClassCode',
-            'SuggestedMajor'
+            'SuggestedMajor1',
+            'SuggestedMajor2',
+            'SuggestedMajor3'
         ];
 
         const rows = [headers];
@@ -1634,6 +1669,7 @@ app.get('/api/assessments/attempts-export', async (req, res) => {
             const trend = run?.trendSignals || {};
 
             rows.push([
+                String(a._id || ''),
                 a.studentName || '',
                 csvTextPreserve(a.studentPhone || ''),
                 a.studentEmail || '',
@@ -1641,7 +1677,9 @@ app.get('/api/assessments/attempts-export', async (req, res) => {
                 a.studentAddress || '',
                 a.studentSchool || '',
                 a.classCode || '',
-                m1.majorName || ''
+                m1.majorName || '',
+                m2.majorName || '',
+                m3.majorName || ''
             ]);
         }
 
@@ -1669,6 +1707,7 @@ app.post('/api/assessments/attempts-export-sheets', async (req, res) => {
         if (quizId) q.quizId = quizId;
         if (email) q.studentEmail = email;
         if (school) q.studentSchool = school;
+        q.sheetsExportedAt = null;
 
         const attempts = await AssessmentAttempt.find(q)
             .sort({ submittedAt: -1 })
@@ -1676,6 +1715,7 @@ app.post('/api/assessments/attempts-export-sheets', async (req, res) => {
             .lean();
 
         const headers = [
+            'AttemptId',
             'StudentName',
             'StudentPhone',
             'StudentEmail',
@@ -1683,7 +1723,9 @@ app.post('/api/assessments/attempts-export-sheets', async (req, res) => {
             'StudentAddress',
             'StudentSchool',
             'ClassCode',
-            'SuggestedMajor',
+            'SuggestedMajor1',
+            'SuggestedMajor2',
+            'SuggestedMajor3',
             'SubmittedAt'
         ];
         const rows = [headers];
@@ -1692,7 +1734,10 @@ app.post('/api/assessments/attempts-export-sheets', async (req, res) => {
             const run = await AssessmentAiRun.findOne({ attemptId: a._id }).sort({ createdAt: -1 }).lean();
             const majors = Array.isArray(run?.suggestedMajors) ? run.suggestedMajors : [];
             const m1 = majors[0] || {};
+            const m2 = majors[1] || {};
+            const m3 = majors[2] || {};
             rows.push([
+                String(a._id || ''),
                 String(a.studentName || ''),
                 String(a.studentPhone || ''),
                 String(a.studentEmail || ''),
@@ -1701,17 +1746,26 @@ app.post('/api/assessments/attempts-export-sheets', async (req, res) => {
                 String(a.studentSchool || ''),
                 String(a.classCode || ''),
                 String(m1.majorName || ''),
+                String(m2.majorName || ''),
+                String(m3.majorName || ''),
                 a.submittedAt ? new Date(a.submittedAt).toISOString() : ''
             ]);
         }
 
         const out = await appendRowsToGoogleSheetsDailyTab({ rows, dayDate: new Date() });
+        if (Array.isArray(out.appendedIds) && out.appendedIds.length > 0) {
+            await AssessmentAttempt.updateMany(
+                { _id: { $in: out.appendedIds } },
+                { $set: { sheetsExportedAt: new Date() } }
+            );
+        }
         res.json({
             success: true,
             mode: 'google-sheets',
             tabName: out.tabName,
             spreadsheetId: out.spreadsheetId,
             appendedRows: out.appendedRows,
+            skippedRows: Math.max(0, attempts.length - Number(out.appendedRows || 0)),
             totalAttempts: attempts.length
         });
     } catch (e) {
