@@ -331,7 +331,7 @@
 
 
     <div class="container" >
-        <h1 id="quizTitle" data-i18n="quiz_loading">Loading Quiz...</h1>
+        <!-- <h1 id="quizTitle" data-i18n="quiz_loading">Loading Quiz...</h1> -->
 
         <div class="student-info" id="studentInfoSection"
             style="margin-top: 1rem; margin-bottom: 2rem; padding: 1.5rem; background: #f8f9fa; border-radius: 12px; border: 1px solid #e9ecef;">
@@ -863,35 +863,6 @@
 
             try {
                 // Early device-block check so user biết trước khi làm bài
-                try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 3500);
-                    let checkResp = null;
-                    try {
-                        checkResp = await fetch(`/api/assessments/${encodeURIComponent(quizId)}/check-device`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ clientMeta: { timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '' } }),
-                            signal: controller.signal
-                        });
-                    } finally {
-                        clearTimeout(timeoutId);
-                    }
-                    if (checkResp.ok) {
-                        const checkPayload = await checkResp.json().catch(() => ({}));
-                        if (checkPayload && checkPayload.blocked) {
-                            const msg = checkPayload.message || 'Thiết bị của bạn đã làm bài test này trước đó.';
-                            const container = document.getElementById('quizContainer');
-                            container.innerHTML = `<div style="text-align: center; color: #c0392b; padding: 2rem; font-size:1.05rem;">${escapeHTML(msg)}</div>`;
-                            document.getElementById('studentInfoSection').classList.add('hidden');
-                            document.getElementById('submitSection').classList.add('hidden');
-                            return;
-                        }
-                    }
-                } catch (e) {
-                    console.warn('Device check failed, continue anyway', e);
-                }
-
                 const response = await fetch(`/api/quiz/${quizId}`);
                 if (!response.ok) throw new Error('Quiz not found');
 
