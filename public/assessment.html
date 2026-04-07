@@ -864,11 +864,19 @@
             try {
                 // Early device-block check so user biết trước khi làm bài
                 try {
-                    const checkResp = await fetch(`/api/assessments/${encodeURIComponent(quizId)}/check-device`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ clientMeta: { timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '' } })
-                    });
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 3500);
+                    let checkResp = null;
+                    try {
+                        checkResp = await fetch(`/api/assessments/${encodeURIComponent(quizId)}/check-device`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ clientMeta: { timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '' } }),
+                            signal: controller.signal
+                        });
+                    } finally {
+                        clearTimeout(timeoutId);
+                    }
                     if (checkResp.ok) {
                         const checkPayload = await checkResp.json().catch(() => ({}));
                         if (checkPayload && checkPayload.blocked) {
