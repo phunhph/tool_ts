@@ -1238,7 +1238,9 @@ async function ensureAssessmentConfigWithTags({ quizId, quiz }) {
 app.post('/api/assessments/:quizId/submit', async (req, res) => {
     try {
         const quizId = String(req.params.quizId || '').trim();
-        const { studentName, studentPhone, studentDob, studentAddress, studentSchool, studentCode, classCode, subjectCode, studentEmail, answers, macAddress, clientMeta } = req.body || {};
+        const body = req.body || {};
+        const { studentName, studentPhone, studentDob, studentAddress, studentSchool, studentCode, subjectCode, studentEmail, answers, macAddress, clientMeta } = body;
+        const classCode = body.classCode ?? body.studentClass ?? body.studentClassCode;
         if (!quizId) return res.status(400).json({ error: 'Missing quizId' });
         if (!answers || typeof answers !== 'object') return res.status(400).json({ error: 'Missing answers' });
         const valid = validateAssessmentStudentInfo({ studentName, studentPhone, studentEmail, studentDob });
@@ -1334,7 +1336,9 @@ app.post('/api/assessments/:quizId/submit', async (req, res) => {
 // Accepts quizId in body and returns the same payload as /api/assessments/:quizId/submit
 app.post('/api/submit/hybrid-ai', async (req, res) => {
     try {
-        const { quizId, studentName, studentPhone, studentDob, studentAddress, studentSchool, studentCode, classCode, subjectCode, studentEmail, answers, macAddress, clientMeta } = req.body || {};
+        const body = req.body || {};
+        const { quizId, studentName, studentPhone, studentDob, studentAddress, studentSchool, studentCode, subjectCode, studentEmail, answers, macAddress, clientMeta } = body;
+        const classCode = body.classCode ?? body.studentClass ?? body.studentClassCode;
         const qid = String(quizId || '').trim();
         if (!qid) return res.status(400).json({ error: 'Missing quizId' });
         if (!answers || typeof answers !== 'object') return res.status(400).json({ error: 'Missing answers' });
