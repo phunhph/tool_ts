@@ -1618,7 +1618,7 @@ app.get('/api/assessments/attempts', async (req, res) => {
                 studentName: a.studentName || '',
                 studentPhone: a.studentPhone || '',
                 studentCode: a.studentCode || '',
-                classCode: a.classCode || '',
+                classCode: resolveClassCodeForAttempt(a),
                 subjectCode: a.subjectCode || '',
                 studentEmail: a.studentEmail || '',
                 studentAddress: a.studentAddress || '',
@@ -1652,6 +1652,28 @@ function csvTextPreserve(v) {
     return `="` + safe + `"`;
 }
 
+function inferClassCodeFromDob(studentDob, refDate = new Date()) {
+    const dob = String(studentDob || '').trim();
+    const m = dob.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return '';
+    const dobYear = Number(m[1]);
+    if (!Number.isFinite(dobYear)) return '';
+    const base = refDate instanceof Date ? refDate : new Date(refDate);
+    if (!(base instanceof Date) || Number.isNaN(base.getTime())) return '';
+    // Keep this aligned with frontend validation (year-only age check).
+    const ageByYear = base.getFullYear() - dobYear;
+    if (ageByYear >= 17) return '12';
+    if (ageByYear >= 16) return '11';
+    if (ageByYear >= 15) return '10';
+    return '';
+}
+
+function resolveClassCodeForAttempt(attemptLike) {
+    const raw = String(attemptLike?.classCode || '').trim();
+    if (raw) return raw;
+    return inferClassCodeFromDob(attemptLike?.studentDob, attemptLike?.submittedAt || new Date());
+}
+
 function getVietnamDaySheetName(d = new Date()) {
     const dt = d instanceof Date ? d : new Date(d);
     const day = String(dt.getDate()).padStart(2, '0');
@@ -1664,7 +1686,7 @@ function parseGooglePrivateKey(raw) {
     return String(raw || '').replace(/\\n/g, '\n');
 }
 
-async function appendRowsToGoogleSheetsDailyTab({ rows, dayDate }) {
+async function upsertRowsToGoogleSheetsDailyTab({ rows, dayDate }) {
     const clientEmail = String(process.env.GOOGLE_SHEETS_CLIENT_EMAIL || '').trim();
     const privateKey = parseGooglePrivateKey(process.env.GOOGLE_SHEETS_PRIVATE_KEY);
     const spreadsheetId = String(process.env.GOOGLE_SHEETS_SPREADSHEET_ID || '').trim();
@@ -1700,40 +1722,64 @@ async function appendRowsToGoogleSheetsDailyTab({ rows, dayDate }) {
         });
     }
 
-    // Always append data rows only; header is written once when sheet is first created.
-    // De-duplicate by AttemptId (column A) to make export idempotent.
+    // Upsert by AttemptId (column A): append new rows, update existing rows in-place.
     const payloadRows = rows.slice(1);
-    let uniqueRows = payloadRows;
-    if (payloadRows.length > 0) {
-        const existingColA = await sheets.spreadsheets.values.get({
-            spreadsheetId,
-            range: `${tabName}!A:A`
-        }).catch(() => ({ data: { values: [] } }));
-        const existedKeys = new Set(
-            (existingColA?.data?.values || [])
-                .flat()
-                .map(v => String(v || '').trim())
-                .filter(Boolean)
-        );
-        uniqueRows = payloadRows.filter(r => {
-            const key = String((Array.isArray(r) ? r[0] : '') || '').trim();
-            if (!key) return true;
-            return !existedKeys.has(key);
-        });
+    const existingColA = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: `${tabName}!A:A`
+    }).catch(() => ({ data: { values: [] } }));
+    const existingRows = Array.isArray(existingColA?.data?.values) ? existingColA.data.values : [];
+    const attemptIdToRowIndex = new Map();
+    existingRows.forEach((r, idx) => {
+        const key = String((Array.isArray(r) ? r[0] : '') || '').trim();
+        // Sheet row index is 1-based; row 1 is header.
+        if (key && idx >= 1) attemptIdToRowIndex.set(key, idx + 1);
+    });
+
+    const toAppend = [];
+    const toUpdate = [];
+    for (const r of payloadRows) {
+        const key = String((Array.isArray(r) ? r[0] : '') || '').trim();
+        if (!key) continue;
+        const rowNo = attemptIdToRowIndex.get(key);
+        if (rowNo) {
+            toUpdate.push({ key, rowNo, values: r });
+        } else {
+            toAppend.push(r);
+        }
     }
-    if (uniqueRows.length > 0) {
+
+    if (toAppend.length > 0) {
         await sheets.spreadsheets.values.append({
             spreadsheetId,
             range: `${tabName}!A1`,
             valueInputOption: 'RAW',
             insertDataOption: 'INSERT_ROWS',
-            requestBody: { values: uniqueRows }
+            requestBody: { values: toAppend }
         });
     }
-    const appendedIds = uniqueRows
+    if (toUpdate.length > 0) {
+        await sheets.spreadsheets.values.batchUpdate({
+            spreadsheetId,
+            requestBody: {
+                valueInputOption: 'RAW',
+                data: toUpdate.map(u => ({
+                    range: `${tabName}!A${u.rowNo}:L${u.rowNo}`,
+                    values: [u.values]
+                }))
+            }
+        });
+    }
+    const processedIds = payloadRows
         .map(r => String((Array.isArray(r) ? r[0] : '') || '').trim())
         .filter(Boolean);
-    return { tabName, spreadsheetId, appendedRows: uniqueRows.length, appendedIds };
+    return {
+        tabName,
+        spreadsheetId,
+        appendedRows: toAppend.length,
+        updatedRows: toUpdate.length,
+        processedIds
+    };
 }
 
 // Export attempts as CSV (full student info + AI result) for Google Sheets
@@ -1787,7 +1833,7 @@ app.get('/api/assessments/attempts-export', async (req, res) => {
                 a.studentDob || '',
                 a.studentAddress || '',
                 a.studentSchool || '',
-                a.classCode || '',
+                resolveClassCodeForAttempt(a),
                 m1.majorName || '',
                 m2.majorName || '',
                 m3.majorName || ''
@@ -1818,7 +1864,6 @@ app.post('/api/assessments/attempts-export-sheets', async (req, res) => {
         if (quizId) q.quizId = quizId;
         if (email) q.studentEmail = email;
         if (school) q.studentSchool = school;
-        q.sheetsExportedAt = null;
 
         const attempts = await AssessmentAttempt.find(q)
             .sort({ submittedAt: -1 })
@@ -1839,15 +1884,27 @@ app.post('/api/assessments/attempts-export-sheets', async (req, res) => {
             'SuggestedMajor3',
             'SubmittedAt'
         ];
-        const rows = [headers];
+        // Export if never exported yet OR missing stored classCode (allow one-time re-export to heal old rows).
+        const eligibleAttempts = attempts.filter(a => {
+            const classMissing = !String(a?.classCode || '').trim();
+            const neverExported = !a?.sheetsExportedAt;
+            return classMissing || neverExported;
+        });
 
-        for (const a of attempts) {
+        const rowsByTabDay = new Map(); // key: DD-MM-YYYY -> { dayDate, rows }
+        const dayLabelOf = (d) => getVietnamDaySheetName(d || new Date());
+        const ensureDayBucket = (dayLabel, dayDate) => {
+            if (!rowsByTabDay.has(dayLabel)) rowsByTabDay.set(dayLabel, { dayDate, rows: [] });
+            return rowsByTabDay.get(dayLabel).rows;
+        };
+
+        for (const a of eligibleAttempts) {
             const run = await AssessmentAiRun.findOne({ attemptId: a._id }).sort({ createdAt: -1 }).lean();
             const majors = Array.isArray(run?.suggestedMajors) ? run.suggestedMajors : [];
             const m1 = majors[0] || {};
             const m2 = majors[1] || {};
             const m3 = majors[2] || {};
-            rows.push([
+            const row = [
                 String(a._id || ''),
                 String(a.studentName || ''),
                 String(a.studentPhone || ''),
@@ -1855,28 +1912,76 @@ app.post('/api/assessments/attempts-export-sheets', async (req, res) => {
                 String(a.studentDob || ''),
                 String(a.studentAddress || ''),
                 String(a.studentSchool || ''),
-                String(a.classCode || ''),
+                String(resolveClassCodeForAttempt(a)),
                 String(m1.majorName || ''),
                 String(m2.majorName || ''),
                 String(m3.majorName || ''),
                 a.submittedAt ? new Date(a.submittedAt).toISOString() : ''
-            ]);
+            ];
+            const dayDate = a.submittedAt ? new Date(a.submittedAt) : new Date();
+            const dayLabel = dayLabelOf(dayDate);
+            ensureDayBucket(dayLabel, dayDate).push(row);
         }
 
-        const out = await appendRowsToGoogleSheetsDailyTab({ rows, dayDate: new Date() });
-        if (Array.isArray(out.appendedIds) && out.appendedIds.length > 0) {
+        let totalAppended = 0;
+        let totalUpdated = 0;
+        const allProcessedIds = [];
+        const touchedTabs = [];
+        let spreadsheetId = '';
+
+        for (const [, bucket] of rowsByTabDay.entries()) {
+            const dayRows = Array.isArray(bucket?.rows) ? bucket.rows : [];
+            const dayDate = bucket?.dayDate || new Date();
+            const rows = [headers, ...dayRows];
+            const out = await upsertRowsToGoogleSheetsDailyTab({ rows, dayDate });
+            touchedTabs.push(out.tabName);
+            spreadsheetId = out.spreadsheetId || spreadsheetId;
+            totalAppended += Number(out.appendedRows || 0);
+            totalUpdated += Number(out.updatedRows || 0);
+            if (Array.isArray(out.processedIds)) {
+                allProcessedIds.push(...out.processedIds);
+            }
+        }
+
+        const uniqueProcessedIds = Array.from(new Set(allProcessedIds)).filter(Boolean);
+        const inferredClassByAttemptId = new Map();
+        for (const a of eligibleAttempts) {
+            const id = String(a?._id || '').trim();
+            if (!id) continue;
+            const inferredClass = String(resolveClassCodeForAttempt(a) || '').trim();
+            if (inferredClass) inferredClassByAttemptId.set(id, inferredClass);
+        }
+        if (uniqueProcessedIds.length > 0) {
             await AssessmentAttempt.updateMany(
-                { _id: { $in: out.appendedIds } },
+                { _id: { $in: uniqueProcessedIds } },
                 { $set: { sheetsExportedAt: new Date() } }
             );
+            const classRepairOps = uniqueProcessedIds
+                .map(id => {
+                    const inferredClass = inferredClassByAttemptId.get(String(id));
+                    if (!inferredClass) return null;
+                    return {
+                        updateOne: {
+                            filter: { _id: id, $or: [{ classCode: null }, { classCode: '' }] },
+                            update: { $set: { classCode: inferredClass } }
+                        }
+                    };
+                })
+                .filter(Boolean);
+            if (classRepairOps.length > 0) {
+                await AssessmentAttempt.bulkWrite(classRepairOps, { ordered: false });
+            }
         }
         res.json({
             success: true,
             mode: 'google-sheets',
-            tabName: out.tabName,
-            spreadsheetId: out.spreadsheetId,
-            appendedRows: out.appendedRows,
-            skippedRows: Math.max(0, attempts.length - Number(out.appendedRows || 0)),
+            tabName: touchedTabs[0] || '',
+            tabs: touchedTabs,
+            spreadsheetId,
+            appendedRows: totalAppended,
+            updatedRows: totalUpdated,
+            processedRows: uniqueProcessedIds.length,
+            skippedRows: Math.max(0, attempts.length - uniqueProcessedIds.length),
             totalAttempts: attempts.length
         });
     } catch (e) {
